@@ -4,11 +4,9 @@ $action = $_GET['action'] ?? 'home';
 
 switch ($action) {
     case 'login':
-        include __DIR__ . '/../templates/auth/login.php';
+        include __DIR__ . '/../templates/auth/login_register.php';
         break;
-    case 'register':
-        include __DIR__ . '/../templates/auth/register.php';
-        break;
+
     case 'patient-dashboard':
         include __DIR__ . '/../templates/patient/dashboard.php';
         break;
