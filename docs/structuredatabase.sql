@@ -49,7 +49,7 @@ CREATE TABLE doctors (
 CREATE TABLE timeslots (
                            id INT AUTO_INCREMENT PRIMARY KEY,
                            start_time TIMESTAMP NOT NULL,
-                           end_time TIMESTAMP NOT NULL,
+                           end_time DATETIME  NOT NULL,
                            is_available BOOLEAN DEFAULT TRUE,
                            id_doctor INT NOT NULL,
 
