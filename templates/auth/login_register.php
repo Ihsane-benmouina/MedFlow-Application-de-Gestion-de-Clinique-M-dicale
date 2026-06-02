@@ -32,13 +32,7 @@
                         <input type="password" id="login-password" placeholder="••••••••" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium bg-slate-50/40" required>
                     </div>
 
-                    <!-- Info Box pour t-tester biha hna f l-front -->
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 space-y-0.5">
-                        <p class="font-bold text-slate-700">💡 Astuce de test rapide :</p>
-                        <p>• Tapez <span class="font-mono text-sky-600 font-bold">admin@test.com</span> ➔ Dashboard Admin</p>
-                        <p>• Tapez <span class="font-mono text-emerald-600 font-bold">doctor@test.com</span> ➔ Dashboard Médecin</p>
-                        <p>• Autre chose ➔ Espace Patient</p>
-                    </div>
+
 
                     <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3.5 rounded-xl cursor-pointer transition-all shadow-xs mt-2">
                         🔓 Se connecter
