@@ -1,108 +1,116 @@
-CREATE DATABASE clinique_db;
-USE clinique_db;
+CREATE DATABASE medflow_db;
+USE medflow_db;
 
--- =========================
--- Table: users
--- =========================
+-- ===================================
+-- USERS
+-- ===================================
+
 CREATE TABLE users (
-                       id INT AUTO_INCREMENT PRIMARY KEY,
-                       firstname VARCHAR(100) NOT NULL,
-                       lastname VARCHAR(100) NOT NULL,
-                       email VARCHAR(150) UNIQUE NOT NULL,
-                       password VARCHAR(255) NOT NULL,
-                       phone VARCHAR(20),
-                       role ENUM('admin', 'doctor', 'patient') NOT NULL
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    prenom VARCHAR(100) NOT NULL,
+    email VARCHAR(150) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'medecin', 'patient') NOT NULL
 );
 
--- =========================
--- Table: specialities
--- =========================
-CREATE TABLE specialities (
-                              id INT AUTO_INCREMENT PRIMARY KEY,
-                              name VARCHAR(100) NOT NULL,
-                              description VARCHAR(255)
+-- ===================================
+-- SPECIALITES
+-- ===================================
+
+CREATE TABLE specialites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100) NOT NULL,
+    description VARCHAR(255)
 );
 
--- =========================
--- Table: doctors
--- =========================
-CREATE TABLE doctors (
-                         id INT AUTO_INCREMENT PRIMARY KEY,
-                         id_user INT NOT NULL,
-                         id_speciality INT NOT NULL,
-                         is_active BOOLEAN DEFAULT TRUE,
+-- ===================================
+-- MEDECINS
+-- ===================================
 
-                         CONSTRAINT fk_doctor_user
-                             FOREIGN KEY (id_user)
-                                 REFERENCES users(id)
-                                 ON DELETE CASCADE,
+CREATE TABLE medecins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_user INT NOT NULL UNIQUE,
+    id_specialite INT NOT NULL,
+    actif BOOLEAN DEFAULT TRUE,
 
-                         CONSTRAINT fk_doctor_speciality
-                             FOREIGN KEY (id_speciality)
-                                 REFERENCES specialities(id)
-                                 ON DELETE RESTRICT
+    CONSTRAINT fk_medecin_user
+        FOREIGN KEY (id_user)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_medecin_specialite
+        FOREIGN KEY (id_specialite)
+        REFERENCES specialites(id)
+        ON DELETE RESTRICT
 );
 
--- =========================
--- Table: timeslots
--- =========================
-CREATE TABLE timeslots (
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           start_time TIMESTAMP NOT NULL,
-                           end_time DATETIME  NOT NULL,
-                           is_available BOOLEAN DEFAULT TRUE,
-                           id_doctor INT NOT NULL,
+-- ===================================
+-- CRENEAUX
+-- ===================================
 
-                           CONSTRAINT fk_timeslot_doctor
-                               FOREIGN KEY (id_doctor)
-                                   REFERENCES doctors(id)
-                                   ON DELETE CASCADE
+CREATE TABLE creneaux (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+
+    heure_debut DATETIME NOT NULL,
+    heure_fin DATETIME NOT NULL,
+
+    disponible BOOLEAN DEFAULT TRUE,
+
+    id_medecin INT NOT NULL,
+
+    CONSTRAINT fk_creneau_medecin
+        FOREIGN KEY (id_medecin)
+        REFERENCES medecins(id)
+        ON DELETE CASCADE
 );
 
--- =========================
--- Table: appointments
--- =========================
-CREATE TABLE appointments (
-                              id INT AUTO_INCREMENT PRIMARY KEY,
+-- ===================================
+-- RENDEZ_VOUS
+-- ===================================
 
-                              id_patient INT NOT NULL,
-                              id_doctor INT NOT NULL,
+CREATE TABLE rendez_vous (
+    id INT AUTO_INCREMENT PRIMARY KEY,
 
-                              status ENUM(
+    id_patient INT NOT NULL,
+    id_medecin INT NOT NULL,
+    id_creneau INT NOT NULL,
+
+    statut ENUM(
         'En attente',
-        'Confirmé',
         'Annulé',
         'Terminé'
-    ) NOT NULL DEFAULT 'En attente',
+    ) DEFAULT 'En attente',
 
-                              id_timeslot INT NOT NULL,
+    CONSTRAINT fk_rendezvous_patient
+        FOREIGN KEY (id_patient)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
 
-                              CONSTRAINT fk_appointment_patient
-                                  FOREIGN KEY (id_patient)
-                                      REFERENCES users(id)
-                                      ON DELETE CASCADE,
+    CONSTRAINT fk_rendezvous_medecin
+        FOREIGN KEY (id_medecin)
+        REFERENCES medecins(id)
+        ON DELETE CASCADE,
 
-                              CONSTRAINT fk_appointment_doctor
-                                  FOREIGN KEY (id_doctor)
-                                      REFERENCES doctors(id)
-                                      ON DELETE CASCADE,
-
-                              CONSTRAINT fk_appointment_timeslot
-                                  FOREIGN KEY (id_timeslot)
-                                      REFERENCES timeslots(id)
-                                      ON DELETE CASCADE
+    CONSTRAINT fk_rendezvous_creneau
+        FOREIGN KEY (id_creneau)
+        REFERENCES creneaux(id)
+        ON DELETE CASCADE
 );
+-- INSERT INTO medecins (id_user, id_specialite, actif) VALUES
+-- (2, 1, TRUE),
+-- (3, 2, TRUE);
+INSERT INTO users (nom, prenom, email, password, role) VALUES
+('Admin', 'System', 'admin@medflow.com', '123456', 'admin'),
 
--- =========================
--- Table: prescriptions
--- =========================
-CREATE TABLE prescriptions (
-                               id INT AUTO_INCREMENT PRIMARY KEY,
-                               description VARCHAR(255) NOT NULL,
-                               id_appointment INT NOT NULL UNIQUE,
+('Dr House', 'Gregory', 'house@medflow.com', '123456', 'medecin'),
 
-                               CONSTRAINT fk_prescription_appointment
-                                   FOREIGN KEY (id_appointment)
-                                       REFERENCES appointments(id)
-                                       ON DELETE CASCADE
-);
+('Dr Smith', 'Anna', 'smith@medflow.com', '123456', 'medecin'),
+
+('Ali', 'Ben', 'ali@gmail.com', '123456', 'patient'),
+
+('Sara', 'El', 'sara@gmail.com', '123456', 'patient');
+INSERT INTO specialites (nom, description) VALUES
+('Cardiologue', 'Spécialiste du cœur'),
+('Dermatologue', 'Spécialiste de la peau'),
+('Généraliste', 'Médecin généraliste');
