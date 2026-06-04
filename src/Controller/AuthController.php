@@ -2,85 +2,144 @@
 
 namespace App\Controller;
 
+use App\Repository\UtilisateurRepository;
+use App\Repository\MedecinRepository;
+use App\Middleware\AuthMiddleware;
 use PDO;
 
-class AuthController {
-    public function __construct(private PDO $pdo) {}
+/**
+ * Contrôleur d'authentification
+ * Gère le login, le logout et l'inscription
+ */
+class AuthController
+{
+    private UtilisateurRepository $utilisateurRepository;
+    private MedecinRepository $medecinRepository;
 
-    public function loginAction(): void {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+    public function __construct(PDO $pdo)
+    {
+        $this->utilisateurRepository = new UtilisateurRepository($pdo);
+        $this->medecinRepository = new MedecinRepository($pdo);
+    }
+
+    /**
+     * Afficher le formulaire de login ou traiter la connexion
+     */
+    public function loginAction(): void
+    {
+        // Si déjà connecté, rediriger vers le bon dashboard
+        if (AuthMiddleware::isLoggedIn()) {
+            $this->redirectByRole($_SESSION['user']['role']);
+            return;
         }
 
-        // Had l-bloc kay-khdem mlli l-patient/tbib/admin kay-cliqui 3la "Se connecter" (POST)
+        // Traiter le formulaire de connexion (POST)
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
 
-            // 1. Récupérer l'utilisateur depuis la table 'users'
-            $sql = "SELECT * FROM users WHERE email = :email";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(['email' => $email]);
-            $user = $stmt->fetch();
+            // Chercher l'utilisateur par email
+            $user = $this->utilisateurRepository->findByEmail($email);
 
-            // 2. Vérification brute dial l-password (b7al l-data d demo li insertina l-bare7)
-            if ($user && $password === $user['password']) {
-
-                // Khbi3 l-data f s-session
+            // Vérifier le mot de passe
+            if ($user && password_verify($password, $user['password'])) {
+                // Stocker les infos en session
                 $_SESSION['user'] = [
-                    'id' => $user['id'],
-                    'nom' => $user['nom'],
+                    'id'     => $user['id'],
+                    'nom'    => $user['nom'],
                     'prenom' => $user['prenom'],
-                    'email' => $user['email'],
-                    'role' => $user['role']
+                    'email'  => $user['email'],
+                    'role'   => $user['role'],
                 ];
 
-                // 🔴 CAS 1: MÉDECIN
+                // Si c'est un médecin, stocker aussi son id_medecin
                 if ($user['role'] === 'medecin') {
-                    // Darori n-jbdou l'ID unique mn table 'medecins' bach l-agenda d tbib t-3rfou chkon
-                    $sqlMed = "SELECT id FROM medecins WHERE id_user = :id_user";
-                    $stmtMed = $this->pdo->prepare($sqlMed);
-                    $stmtMed->execute(['id_user' => $user['id']]);
-                    $medecin = $stmtMed->fetch();
-
+                    $medecin = $this->medecinRepository->findByUserId($user['id']);
                     if ($medecin) {
-                        $_SESSION['user']['id_medecin'] = $medecin['id'];
+                        $_SESSION['user']['id_medecin'] = $medecin['id_medecin'];
                     }
-
-                    header('Location: index.php?action=doctor_dashboard');
-                    exit();
                 }
 
-                // 🔵 CAS 2: PATIENT
-                if ($user['role'] === 'patient') {
-                    header('Location: index.php?action=patient_dashboard');
-                    exit();
-                }
-
-                // 🟢 CAS 3: ADMIN
-                if ($user['role'] === 'admin') {
-                    header('Location: index.php?action=admin_dashboard');
-                    exit();
-                }
-
+                // Rediriger vers le bon dashboard
+                $this->redirectByRole($user['role']);
+                return;
             } else {
-                // Ila dkhl l-data ghalta, khbi l-erreur f s-session o rj3o l l-login
+                // Erreur de connexion
                 $_SESSION['error_msg'] = "Email ou mot de passe incorrect.";
                 header('Location: index.php?action=login');
                 exit();
             }
         }
 
-        // Ila dkhl l-page 3adi (GET), affichi lih l-formulaire direct
-        include __DIR__ . '/../../templates/auth/login_register.php';
+        // Afficher le formulaire de login (GET)
+        include __DIR__ . '/../../templates/auth/login.php';
     }
 
-    public function logoutAction(): void {
+    /**
+     * Afficher le formulaire d'inscription ou traiter l'inscription
+     */
+    public function registerAction(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $nom = trim($_POST['nom'] ?? '');
+            $prenom = trim($_POST['prenom'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $password = $_POST['password'] ?? '';
+
+            // Vérifier que l'email n'existe pas déjà
+            $existing = $this->utilisateurRepository->findByEmail($email);
+            if ($existing) {
+                $_SESSION['error_msg'] = "Cet email est déjà utilisé.";
+                header('Location: index.php?action=register');
+                exit();
+            }
+
+            // Hacher le mot de passe
+            $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+            // Créer le patient
+            $this->utilisateurRepository->create($nom, $prenom, $email, $hashedPassword, 'patient');
+
+            $_SESSION['success_msg'] = "Compte créé avec succès ! Connectez-vous.";
+            header('Location: index.php?action=login');
+            exit();
+        }
+
+        // Afficher le formulaire d'inscription (GET)
+        include __DIR__ . '/../../templates/auth/login.php';
+    }
+
+    /**
+     * Déconnecter l'utilisateur
+     */
+    public function logoutAction(): void
+    {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         session_destroy();
         header('Location: index.php?action=login');
+        exit();
+    }
+
+    /**
+     * Rediriger vers le dashboard selon le rôle
+     */
+    private function redirectByRole(string $role): void
+    {
+        switch ($role) {
+            case 'admin':
+                header('Location: index.php?action=admin_dashboard');
+                break;
+            case 'medecin':
+                header('Location: index.php?action=doctor_dashboard');
+                break;
+            case 'patient':
+                header('Location: index.php?action=patient_dashboard');
+                break;
+            default:
+                header('Location: index.php?action=login');
+        }
         exit();
     }
 }

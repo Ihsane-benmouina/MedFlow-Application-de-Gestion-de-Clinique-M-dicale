@@ -1,30 +1,38 @@
 <?php
+/**
+ * Configuration de la connexion à la base de données
+ * Ce fichier lit les paramètres depuis le fichier .env
+ * et crée une connexion PDO à MySQL
+ */
 
+// Chemin vers le fichier .env
 $envPath = __DIR__ . '/../.env';
 
+// Lire le fichier .env et charger les variables
 if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
+        // Ignorer les commentaires
         if (strpos(trim($line), '#') === 0) continue;
-
+        // Séparer nom=valeur
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
         $value = trim($value);
-
-        $value = trim($value, '"\'');
-
+        // Mettre dans l'environnement
         putenv("{$name}={$value}");
     }
 } else {
-    die(" Erreur: Le fichier .env est introuvable à la racine du projet.");
+    die("Erreur : Le fichier .env est introuvable.");
 }
 
+// Définir les constantes de connexion
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'clinique_db');
+define('DB_NAME', getenv('DB_NAME') ?: 'medflow_db');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 
 try {
+    // Créer la connexion PDO
     $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
 
     $options = [
@@ -35,10 +43,9 @@ try {
 
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
-
-
 } catch (PDOException $e) {
-    die(" Erreur de connexion à la base de données : " . $e->getMessage());
+    die("Erreur de connexion à la base de données : " . $e->getMessage());
 }
 
+// Retourner l'objet PDO
 return $pdo;
