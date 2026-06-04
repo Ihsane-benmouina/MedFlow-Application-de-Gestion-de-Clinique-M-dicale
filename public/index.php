@@ -21,3 +21,4 @@ switch ($action) {
         include __DIR__ . '/../templates/patient/recherche.php';
         break;
 }
+
