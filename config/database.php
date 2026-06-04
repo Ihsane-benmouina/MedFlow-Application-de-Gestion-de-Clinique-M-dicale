@@ -21,7 +21,7 @@ if (file_exists($envPath)) {
 }
 
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
-define('DB_NAME', getenv('DB_NAME') ?: 'clinique_db');
+define('DB_NAME', getenv('DB_NAME') ?: 'medflow_db');
 define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 
@@ -35,6 +35,8 @@ try {
     ];
 
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+
 
 } catch (PDOException $e) {
     die(" Erreur de connexion à la base de données : " . $e->getMessage());
