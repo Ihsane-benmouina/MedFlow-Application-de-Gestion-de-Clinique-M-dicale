@@ -1,4 +1,27 @@
-<?php include __DIR__ . '/../layout/header.php'; ?>
+<?php
+// 1. Assurer que la session est démarrée
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 2. Sécurité : Éviter les warnings si la variable n'est pas passée par le Controller
+if (!isset($appointments)) {
+    $appointments = [];
+}
+
+// 3. Calcul des statistiques réelles basées sur la liste des RDV passée par le Controller
+$countConfirmes = 0;
+$countAttente = 0;
+$countAnnules = 0;
+
+foreach ($appointments as $rdv) {
+    if ($rdv['statut'] === 'Confirmé') $countConfirmes++;
+    if ($rdv['statut'] === 'En attente') $countAttente++;
+    if ($rdv['statut'] === 'Annulé') $countAnnules++;
+}
+
+include __DIR__ . '/../layout/header.php';
+?>
 
     <!-- Container principal avec Sidebar et Zone de Contenu Médecin -->
     <div class="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)]">
@@ -9,7 +32,7 @@
                 <div class="px-3 py-2 border-b border-slate-800/60">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Espace Professionnel</p>
                     <h4 class="text-white font-extrabold text-sm tracking-tight flex items-center gap-2 mt-0.5">
-                        🩺 Dr. Ahmed Alami
+                        🩺 Dr. <?= htmlspecialchars($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?>
                     </h4>
                 </div>
 
@@ -38,23 +61,23 @@
             <!-- ========================================== -->
             <div id="doc-stats" class="space-y-6 doc-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. Ahmed Alami</h2>
+                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. <?= htmlspecialchars($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?></h2>
                     <p class="text-xs text-slate-400">Voici l'état d'activité de votre cabinet pour aujourd'hui.</p>
                 </div>
 
-                <!-- Petite grille d'indicateurs du jour -->
+                <!-- Petite grille d'indicateurs du jour DYNAMIC -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">RDV Confirmés</p>
-                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1">12</h3>
+                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1"><?= $countConfirmes ?></h3>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">En Attente</p>
-                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1">3</h3>
+                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1"><?= $countAttente ?></h3>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Annulés</p>
-                        <h3 class="text-2xl font-extrabold text-slate-400 mt-1">1</h3>
+                        <h3 class="text-2xl font-extrabold text-slate-400 mt-1"><?= $countAnnules ?></h3>
                     </div>
                 </div>
 
@@ -66,7 +89,7 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- TAB 2: GESTION DE L'AGENDA (US 2.1 / 2.2)  -->
+            <!-- TAB 2: GESTION DE L'AGENDA (DYNAMIC)       -->
             <!-- ========================================== -->
             <div id="doc-agenda" class="hidden space-y-6 doc-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
@@ -86,29 +109,51 @@
                             </tr>
                             </thead>
                             <tbody class="text-sm divide-y divide-slate-100">
-                            <!-- Ligne 1 -->
-                            <tr class="hover:bg-slate-50/30 transition-colors">
-                                <td class="p-4 font-bold text-slate-700">Lundi - 09:00</td>
-                                <td class="p-4 font-semibold text-slate-900">Khadija Makkaoui</td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-100">En attente</span>
-                                </td>
-                                <td class="p-4 text-right space-x-1">
-                                    <button onclick="alert('Rendez-vous validé ! Statut mis à : CONFIRME');" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">Confirmer</button>
-                                    <button onclick="alert('Rendez-vous décliné. Le créneau est à nouveau libre pour les autres patients.');" class="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">Annuler le RDV</button>
-                                </td>
-                            </tr>
-                            <!-- Ligne 2 -->
-                            <tr class="hover:bg-slate-50/30 transition-colors">
-                                <td class="p-4 font-bold text-slate-700">Mardi - 11:30</td>
-                                <td class="p-4 font-semibold text-slate-900">Youssef Nassiri</td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Confirmé</span>
-                                </td>
-                                <td class="p-4 text-right">
-                                    <button onclick="switchDoctorTab('doc-consultation');" class="px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">🩺 Lancer la consultation</button>
-                                </td>
-                            </tr>
+
+                            <?php if (empty($appointments)): ?>
+                                <tr>
+                                    <td colspan="4" class="p-4 text-center text-slate-400 italic">Aucun rendez-vous trouvé dans votre historique.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($appointments as $rdv): ?>
+                                    <tr class="hover:bg-slate-50/30 transition-colors">
+                                        <td class="p-4 font-bold text-slate-700"><?= date('d/m à H:i', strtotime($rdv['heure_debut'])) ?></td>
+                                        <td class="p-4 font-semibold text-slate-900"><?= htmlspecialchars($rdv['patient_nom'] . ' ' . $rdv['patient_prenom']) ?></td>
+                                        <td class="p-4">
+                                            <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold
+                                                <?= $rdv['statut'] === 'En attente' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' ?>
+                                                <?= $rdv['statut'] === 'Confirmé' ? 'bg-sky-50 text-sky-700 border border-sky-100' : '' ?>
+                                                <?= $rdv['statut'] === 'Terminé' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : '' ?>
+                                                <?= $rdv['statut'] === 'Annulé' ? 'bg-rose-50 text-rose-700 border border-rose-100' : '' ?>
+                                            ">
+                                                <?= htmlspecialchars($rdv['statut']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-right space-x-1">
+                                            <?php if ($rdv['statut'] === 'En attente'): ?>
+                                                <!-- Action Confirmer -->
+                                                <form action="index.php?action=doctor_update_statut" method="POST" class="inline">
+                                                    <input type="hidden" name="id_rdv" value="<?= $rdv['id_rdv'] ?>">
+                                                    <input type="hidden" name="statut_action" value="Confirmé">
+                                                    <button type="submit" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">Confirmer</button>
+                                                </form>
+                                                <!-- Action Annuler -->
+                                                <form action="index.php?action=doctor_update_statut" method="POST" class="inline">
+                                                    <input type="hidden" name="id_rdv" value="<?= $rdv['id_rdv'] ?>">
+                                                    <input type="hidden" name="statut_action" value="Annulé">
+                                                    <button type="submit" onclick="return confirm('Annuler ce rendez-vous ?')" class="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">Annuler le RDV</button>
+                                                </form>
+                                            <?php elseif ($rdv['statut'] === 'Confirmé'): ?>
+                                                <!-- Lancer la Consultation via l-JS m9ad -->
+                                                <button onclick="prepareConsultation(<?= $rdv['id_rdv'] ?>, '<?= htmlspecialchars($rdv['patient_nom'] . ' ' . $rdv['patient_prenom'] . ' (RDV de ' . date('H:i', strtotime($rdv['heure_debut'])) . ')') ?>')" class="px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">🩺 Lancer la consultation</button>
+                                            <?php else: ?>
+                                                <span class="text-xs text-slate-400 italic">Aucune action</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
                             </tbody>
                         </table>
                     </div>
@@ -116,7 +161,7 @@
             </div>
 
             <!-- ========================================== -->
-            <!-- TAB 3: CONSULTATION & PRESCRIPTIONS (US 2.3)-->
+            <!-- TAB 3: CONSULTATION & PRESCRIPTIONS        -->
             <!-- ========================================== -->
             <div id="doc-consultation" class="hidden space-y-6 doc-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
@@ -127,13 +172,20 @@
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs max-w-xl space-y-4">
                     <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                         <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Patient Sélectionné</p>
-                        <h3 class="text-sm font-bold text-slate-900 mt-0.5">Youssef Nassiri (RDV de 11:30)</h3>
+                        <!-- Nom du patient injecté dynamiquement par JS -->
+                        <h3 id="active-patient-display" class="text-sm font-bold text-slate-900 mt-0.5 italic text-slate-400">Aucun patient sélectionné (Sélectionnez un RDV "Confirmé" dans l'agenda)</h3>
                     </div>
 
-                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Consultation clôturée ! Statut::TERMINÉ enregistré et Ordonnance envoyée au dossier du Patient.'); switchDoctorTab('doc-stats');">
+                    <form action="index.php?action=finaliser_consultation" method="POST" class="space-y-4">
+                        <!-- ID du rdv sélectionné envoyé en POST sécurisé -->
+                        <input type="hidden" name="id_rdv" id="input-rdv-id">
+
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prescription Médicale (Texte)</label>
-                            <textarea rows="5" placeholder="1. Paracétamol 1g - 3 fois par jour pendant 5 jours&#10;2. Repos strict de 48 heures..." class="w-full p-4 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-emerald-500 bg-slate-50/40" required></textarea>
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Diagnostic / Notes Médicales</label>
+                            <input type="text" name="diagnostic" required placeholder="Ex: Grippe saisonnière, Fatigue intense" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-slate-50/40 mb-4">
+
+                            <label class="block text-xs font-semibold text-slate-600 mb-2">Prescription Médicale / Ordonnance (Texte)</label>
+                            <textarea name="ordonnance" rows="5" placeholder="1. Paracétamol 1g - 3 fois par jour pendant 5 jours&#10;2. Repos strict de 48 heures..." class="w-full p-4 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:border-emerald-500 bg-slate-50/40" required></textarea>
                         </div>
 
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3.5 rounded-xl shadow-md shadow-emerald-500/10 cursor-pointer transition-all">
@@ -165,8 +217,18 @@
 
             // 4. Activer le style sur le bouton cliqué
             const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-slate-400', 'font-semibold');
-            activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-emerald-500/10', 'to-emerald-500/20', 'border-emerald-500/20', 'shadow-xs', 'font-bold');
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-400', 'font-semibold');
+                activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-emerald-500/10', 'to-emerald-500/20', 'border-emerald-500/20', 'shadow-xs', 'font-bold');
+            }
+        }
+
+        // Fonction magique pour lier le clic de l'agenda avec l'onglet Consultation
+        function prepareConsultation(rdvId, patientDetails) {
+            document.getElementById('input-rdv-id').value = rdvId;
+            document.getElementById('active-patient-display').innerText = "👤 " + patientDetails;
+            document.getElementById('active-patient-display').classList.remove('italic', 'text-slate-400');
+            switchDoctorTab('doc-consultation');
         }
     </script>
 

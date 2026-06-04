@@ -1,4 +1,27 @@
-<?php include __DIR__ . '/../layout/header.php'; ?>
+<?php include __DIR__ . '/../layout/header.php';
+// 1. Assurer que la session est démarrée
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// 2. Sécurité : Éviter les warnings si la page est appelée sans passer par le Controller
+if (!isset($specialites)) { $specialites = []; }
+if (!isset($medecinsList)) { $medecinsList = []; }
+if (!isset($myAppointments)) { $myAppointments = []; }
+if (!isset($myOrdonnances)) { $myOrdonnances = []; }
+
+// 3. Sécurité : Si $_SESSION['user'] n'est pas définie, créer un tableau vide fictif pour éviter les crashs d'affichage
+if (!isset($_SESSION['user'])) {
+    $_SESSION['user'] = [
+            'id' => 0,
+            'nom' => 'Invité',
+            'prenom' => 'Patient',
+            'role' => 'patient'
+    ];
+}
+
+include __DIR__ . '/../layout/header.php';
+?>
 
     <!-- Container principal avec Sidebar et Zone de Contenu Patient -->
     <div class="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)]">
@@ -9,7 +32,7 @@
                 <div class="px-3 py-2 border-b border-slate-800/60">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-sky-400">Espace Personnel</p>
                     <h4 class="text-white font-extrabold text-sm tracking-tight flex items-center gap-2 mt-0.5">
-                        👤 Youssef Nassiri
+                        👤 <?= htmlspecialchars($_SESSION['user']['prenom'] . ' ' . $_SESSION['user']['nom']) ?>
                     </h4>
                 </div>
 
@@ -54,7 +77,7 @@
                     </div>
                 </div>
 
-                <!-- Barre Horizontale Scrollable des Catégories -->
+                <!-- Barre Horizontale Scrollable des Catégories Dynamic -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Parcourir par spécialité</h3>
@@ -62,38 +85,58 @@
                     </div>
                     <div class="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none snap-x [-ms-overflow-style:none] [scrollbar-width:none]">
                         <button onclick="filterSpeciality('all')" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/20 cursor-pointer transition-all spec-btn" id="btn-all"> ✨ <span>Tous</span></button>
-                        <button onclick="filterSpeciality('cardio')" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn" id="btn-cardio"> ❤️ <span>Cardiologie</span></button>
-                        <button onclick="filterSpeciality('general')" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn" id="btn-general"> 🩺 <span>Médecine Générale</span></button>
+
+                        <?php foreach ($specialites as $spec): ?>
+                            <button onclick="filterSpeciality('<?= $spec['id'] ?>')" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn" id="btn-<?= $spec['id'] ?>">
+                                🩺 <span><?= htmlspecialchars($spec['nom']) ?></span>
+                            </button>
+                        <?php endforeach; ?>
                     </div>
                 </div>
 
-                <!-- Grille de réservation des Médecins -->
+                <!-- Grille de réservation des Médecins Dynamic -->
                 <div class="space-y-4">
                     <h3 class="text-base font-bold text-slate-900 tracking-tight border-b border-slate-100 pb-2">Praticiens disponibles</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="doctors-grid">
-                        <!-- Dr Alami -->
-                        <div class="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-between gap-6 doc-card" data-spec="cardio" data-name="ahmed alami">
-                            <div class="flex gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-extrabold text-lg">Dr</div>
+
+                        <?php foreach ($medecinsList as $medecin): ?>
+                            <div class="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-between gap-6 doc-card"
+                                 data-spec="<?= $medecin['id_specialite'] ?>"
+                                 data-name="<?= mb_strtolower(htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom']), 'UTF-8') ?>">
+                                <div class="flex gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-extrabold text-lg">Dr</div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 text-sm">Dr. <?= htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom']) ?></h4>
+                                        <p class="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-1 inline-block"><?= htmlspecialchars($medecin['specialite_nom']) ?></p>
+                                    </div>
+                                </div>
                                 <div>
-                                    <h4 class="font-bold text-slate-900 text-sm">Dr. Ahmed Alami</h4>
-                                    <p class="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-1 inline-block">Cardiologue</p>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Choisir un créneau :</p>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <?php if (empty($medecin['creneaux'])): ?>
+                                            <span class="col-span-2 text-xs text-slate-400 italic">Aucun créneau libre</span>
+                                        <?php else: ?>
+                                            <?php foreach ($medecin['creneaux'] as $creneau): ?>
+                                                <form action="index.php?action=reserver_rdv" method="POST" onsubmit="return confirm('Confirmer la réservation pour le <?= date('d/m à H:i', strtotime($creneau['heure_debut'])) ?> ?')">
+                                                    <input type="hidden" name="id_medecin" value="<?= $medecin['id_medecin'] ?>">
+                                                    <input type="hidden" name="id_creneau" value="<?= $creneau['id'] ?>">
+                                                    <button type="submit" class="w-full py-2.5 text-xs font-bold text-center text-sky-600 bg-sky-50/80 border border-sky-100 hover:bg-sky-500 hover:text-white rounded-xl transition-all cursor-pointer">
+                                                        <?= date('d M - H:i', strtotime($creneau['heure_debut'])) ?>
+                                                    </button>
+                                                </form>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Choisir un créneau :</p>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <button onclick="alert('Demande de RDV envoyée pour Lundi à 09:00 ! En attente de validation du médecin.'); switchPatientTab('pat-appointments');" class="py-2.5 text-xs font-bold text-center text-sky-600 bg-sky-50/80 border border-sky-100 hover:bg-sky-500 hover:text-white rounded-xl transition-all cursor-pointer">Lundi 09:00</button>
-                                    <button onclick="alert('Demande de RDV envoyée pour Mardi à 11:30 ! En attente de validation du médecin.'); switchPatientTab('pat-appointments');" class="py-2.5 text-xs font-bold text-center text-sky-600 bg-sky-50/80 border border-sky-100 hover:bg-sky-500 hover:text-white rounded-xl transition-all cursor-pointer">Mardi 11:30</button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endforeach; ?>
+
                     </div>
                 </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- TAB 2: MES RENDEZ-VOUS                     -->
+            <!-- TAB 2: MES RENDEZ-VOUS (DYNAMIC)           -->
             <!-- ========================================== -->
             <div id="pat-appointments" class="hidden space-y-6 pat-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
@@ -111,20 +154,31 @@
                         </tr>
                         </thead>
                         <tbody class="text-sm divide-y divide-slate-100">
-                        <tr>
-                            <td class="p-4 font-bold text-slate-900">Dr. Ahmed Alami</td>
-                            <td class="p-4 text-slate-600 font-medium">Mardi 2 Juin - 11:30</td>
-                            <td class="p-4">
-                                <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Confirmé</span>
-                            </td>
-                        </tr>
+                        <?php if (empty($myAppointments)): ?>
+                            <tr>
+                                <td colspan="3" class="p-4 text-center text-slate-400 italic">Aucun rendez-vous trouvé.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($myAppointments as $rdv): ?>
+                                <tr>
+                                    <td class="p-4 font-bold text-slate-900">Dr. <?= htmlspecialchars($rdv['medecin_nom'] . ' ' . $rdv['medecin_prenom']) ?></td>
+                                    <td class="p-4 text-slate-600 font-medium"><?= date('d M Y - H:i', strtotime($rdv['heure_debut'])) ?></td>
+                                    <td class="p-4">
+                                        <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold
+                                            <?= $rdv['statut'] === 'Confirmé' || $rdv['statut'] === 'Terminé' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100' ?>">
+                                            <?= htmlspecialchars($rdv['statut']) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- TAB 3: DOSSIER MÉDICAL / ORDONNANCES       -->
+            <!-- TAB 3: DOSSIER MÉDICAL / ORDONNANCES (DYNAMIC) -->
             <!-- ========================================== -->
             <div id="pat-records" class="hidden space-y-6 pat-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
@@ -132,28 +186,33 @@
                     <p class="text-xs text-slate-400">Consultez en toute sécurité les ordonnances délivrées par vos praticiens.</p>
                 </div>
 
-                <!-- Carte Ordonnance -->
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs max-w-xl space-y-4">
-                    <div class="flex justify-between items-start border-b border-slate-100 pb-3">
-                        <div>
-                            <h4 class="font-bold text-slate-900 text-sm">Ordonnance Émise</h4>
-                            <p class="text-xs text-slate-400">Par: <span class="font-semibold text-slate-700">Dr. Ahmed Alami</span></p>
+                <?php if (empty($myOrdonnances)): ?>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 text-center text-slate-400 italic">
+                        Aucune ordonnance disponible dans votre dossier pour le moment.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($myOrdonnances as $ordo): ?>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs max-w-xl space-y-4">
+                            <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm">Ordonnance Émise</h4>
+                                    <p class="text-xs text-slate-400">Par: <span class="font-semibold text-slate-700">Dr. <?= htmlspecialchars($ordo['medecin_nom'] . ' ' . $ordo['medecin_prenom']) ?></span></p>
+                                </div>
+                                <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-medium">Le <?= date('d/m/Y', strtotime($ordo['date_creation'])) ?></span>
+                            </div>
+
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100/70 font-mono text-xs text-slate-700 whitespace-pre-line leading-relaxed">
+                                <?= nl2br(htmlspecialchars($ordo['contenu'])) ?>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button onclick="window.print();" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer">
+                                    🖨️ Imprimer cette ordonnance
+                                </button>
+                            </div>
                         </div>
-                        <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-medium">Reçue aujourd'hui</span>
-                    </div>
-
-                    <!-- Zone de texte de l'ordonnance rédigée par le doc -->
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100/70 font-mono text-xs text-slate-700 whitespace-pre-line leading-relaxed">
-                        1. Paracétamol 1g - 3 fois par jour pendant 5 jours.
-                        2. Repos strict de 48 heures.
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button onclick="window.print();" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer">
-                            🖨️ Imprimer ou Télécharger PDF
-                        </button>
-                    </div>
-                </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
 
         </div>
@@ -177,7 +236,6 @@
             activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
         }
 
-        // Moteur de recherche et filtrage des catégories (Copie conforme)
         let currentSpeciality = 'all';
 
         function filterSpeciality(spec) {
@@ -187,17 +245,20 @@
                 btn.classList.add('bg-white', 'text-slate-700', 'border-slate-100', 'font-semibold');
             });
             const activeBtn = document.getElementById('btn-' + spec);
-            activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-100', 'font-semibold');
-            activeBtn.classList.add('bg-sky-500', 'text-white', 'shadow-lg', 'shadow-sky-500/20', 'font-bold');
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-100', 'font-semibold');
+                activeBtn.classList.add('bg-sky-500', 'text-white', 'shadow-lg', 'shadow-sky-500/20', 'font-bold');
+            }
             applyFilters();
         }
 
         function filterByName() { applyFilters(); }
 
+        // Filtrage instantané JS dyalk kima hwa
         function applyFilters() {
             const searchVal = document.getElementById('nameSearch').value.toLowerCase().trim();
             document.querySelectorAll('.doc-card').forEach(card => {
-                const matchesSpec = (currentSpeciality === 'all' || card.getAttribute('data-spec') === currentSpeciality);
+                const matchesSpec = (currentSpeciality === 'all' || card.getAttribute('data-spec') == currentSpeciality);
                 const matchesName = card.getAttribute('data-name').includes(searchVal);
                 if (matchesSpec && matchesName) { card.classList.remove('hidden'); } else { card.classList.add('hidden'); }
             });

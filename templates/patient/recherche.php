@@ -1,10 +1,27 @@
-<?php include __DIR__ . '/../layout/header.php'; ?>
+<?php include __DIR__ . '/../layout/header.php';
+
+// Sécurité pour éviter les warnings si la page est appelée directement sans le Controller
+if (!isset($specialites)) {
+    $specialites = [];
+}
+if (!isset($medecinsList)) {
+    $medecinsList = [];
+}
+
+// Fonction helper pour éviter l'erreur de la fonction lowercase non définie
+if (!function_exists('lowercase')) {
+    function lowercase($str) {
+        return mb_strtolower($str, 'UTF-8');
+    }
+}
+
+?>
 
     <script>
-        let isUserLoggedIn = false;
+        // Khllina la session dynamic bach JavaScript i-chouf wach l-patient m-connecter déjà
+        let isUserLoggedIn = <?= isset($_SESSION['user']) ? 'true' : 'false' ?>;
         let selectedSlotInfo = null;
-        let currentSpeciality = 'all';
-        // Offset dial l-yamat li affichés f l-planning (0 = 5 jours loulines, 1 = 5 jours tanyine)
+        let currentSpeciality = '<?= isset($_GET['specialite']) ? htmlspecialchars($_GET['specialite']) : 'all' ?>';
         let currentWeekOffset = 0;
     </script>
 
@@ -27,13 +44,29 @@
             </div>
         </div>
 
+        <?php if (isset($_SESSION['error_msg'])): ?>
+            <div class="bg-rose-50 text-rose-700 text-xs font-semibold px-4 py-2.5 rounded-xl border border-rose-100">
+                ⚠️ <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+            </div>
+        <?php endif; ?>
+
         <div class="space-y-3">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Parcourir par spécialité</h3>
             <div class="flex items-center gap-3 overflow-x-auto pb-3 scrollbar-none snap-x [-ms-overflow-style:none] [scrollbar-width:none]">
-                <button onclick="filterSpeciality('all')" id="btn-all" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/20 cursor-pointer transition-all spec-btn">✨ <span>Tous les médecins</span></button>
-                <button onclick="filterSpeciality('cardio')" id="btn-cardio" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn">❤️ <span>Cardiologie</span></button>
-                <button onclick="filterSpeciality('general')" id="btn-general" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn">🩺 <span>Médecine Générale</span></button>
-                <button onclick="filterSpeciality('pediatre')" id="btn-pediatre" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn">👶 <span>Pédiatrie</span></button>
+
+                <button onclick="filterSpeciality('all')" id="btn-all" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-bold bg-sky-500 text-white shadow-lg shadow-sky-500/20 cursor-pointer transition-all spec-btn">
+                    <span>✨ Tous les médecins</span>
+                </button>
+
+                <?php foreach ($specialites as $spec): ?>
+                    <?php
+                    // Générer un ID propre pour JavaScript (Ex: cardio, general...)
+                    $specSlug = lowercase(str_replace([' ', 'é', 'è'], ['', 'e', 'e'], $spec['nom']));
+                    ?>
+                    <button onclick="filterSpeciality('<?= $spec['id'] ?>')" id="btn-<?= $spec['id'] ?>" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn">
+                        <span>🩺 <?= htmlspecialchars($spec['nom']) ?></span>
+                    </button>
+                <?php endforeach; ?>
             </div>
         </div>
 
@@ -49,55 +82,36 @@
             </div>
 
             <div class="space-y-6" id="doctors-list-container">
+                <?php if (empty($medecinsList)): ?>
+                    <div class="bg-white p-8 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400 text-sm">
+                        Sélectionnez une spécialité ci-dessus pour afficher les plannings réels.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($medecinsList as $medecin): ?>
+                        <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col lg:flex-row gap-6 items-start doc-card"
+                             data-spec="<?= $medecin['id_specialite'] ?? '' ?>"
+                             data-name="<?= lowercase(htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom'])) ?>">
 
-                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col lg:flex-row gap-6 items-start doc-card" data-spec="cardio" data-name="ahmed alami">
-                    <div class="w-full lg:w-2/5 space-y-3">
-                        <div class="flex gap-4 items-center">
-                            <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-extrabold text-base">Dr</div>
-                            <div>
-                                <h4 class="font-extrabold text-slate-900 text-sm">Dr. Ahmed Alami</h4>
-                                <p class="text-[11px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-0.5 inline-block">Cardiologue</p>
+                            <div class="w-full lg:w-2/5 space-y-3">
+                                <div class="flex gap-4 items-center">
+                                    <div class="w-12 h-12 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-extrabold text-base">Dr</div>
+                                    <div>
+                                        <h4 class="font-extrabold text-slate-900 text-sm">Dr. <?= htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom']) ?></h4>
+                                        <p class="text-[11px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-0.5 inline-block"><?= htmlspecialchars($medecin['specialite_nom']) ?></p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-400 font-medium leading-relaxed">📍 Clinique MedFlow, Maroc<br>💳 Conventionné Secteur 1</p>
+                            </div>
+
+                            <div class="w-full lg:w-3/5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
+                                <div class="grid grid-cols-5 gap-2 text-center agenda-grid"
+                                     data-doc-id="<?= $medecin['id_medecin'] ?>"
+                                     data-slots='<?= json_encode($medecin['creneaux']) ?>'>
+                                </div>
                             </div>
                         </div>
-                        <p class="text-xs text-slate-400 font-medium leading-relaxed">📍 81 Avenue Hassan II, Casablanca<br>💳 Conventionné Secteur 1</p>
-                    </div>
-                    <div class="w-full lg:w-3/5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
-                        <div class="grid grid-cols-5 gap-2 text-center agenda-grid" data-doc-id="alami"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col lg:flex-row gap-6 items-start doc-card" data-spec="general" data-name="rachid benjelloun">
-                    <div class="w-full lg:w-2/5 space-y-3">
-                        <div class="flex gap-4 items-center">
-                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-extrabold text-base">Dr</div>
-                            <div>
-                                <h4 class="font-extrabold text-slate-900 text-sm">Dr. Rachid Benjelloun</h4>
-                                <p class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md mt-0.5 inline-block">Généraliste</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-400 font-medium leading-relaxed">📍 14 Rue Allal Ben Abdellah, Rabat<br>💳 Tarif National de Référence</p>
-                    </div>
-                    <div class="w-full lg:w-3/5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
-                        <div class="grid grid-cols-5 gap-2 text-center agenda-grid" data-doc-id="benjelloun"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 flex flex-col lg:flex-row gap-6 items-start doc-card" data-spec="pediatre" data-name="sanaa el fassi">
-                    <div class="w-full lg:w-2/5 space-y-3">
-                        <div class="flex gap-4 items-center">
-                            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-extrabold text-base">Dr</div>
-                            <div>
-                                <h4 class="font-extrabold text-slate-900 text-sm">Dr. Sanaa El Fassi</h4>
-                                <p class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md mt-0.5 inline-block">Pédiatre</p>
-                            </div>
-                        </div>
-                        <p class="text-xs text-slate-400 font-medium leading-relaxed">📍 40 Boulevard Anfa, Casablanca<br>💳 Secteur Privé Externe</p>
-                    </div>
-                    <div class="w-full lg:w-3/5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
-                        <div class="grid grid-cols-5 gap-2 text-center agenda-grid" data-doc-id="elfassi"></div>
-                    </div>
-                </div>
-
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -111,16 +125,22 @@
                 <p class="text-xs text-slate-400 font-medium">Validation requise pour bloquer le rendez-vous</p>
             </div>
 
+            <form id="final-booking-form" action="index.php?action=reserver_rdv" method="POST" class="hidden">
+                <input type="hidden" name="id_medecin" id="submit-doc-id">
+                <input type="hidden" name="id_creneau" id="submit-creneau-id">
+            </form>
+
             <div id="modal-login-box" class="space-y-5">
                 <div class="text-center"><h3 class="text-lg font-extrabold text-slate-900">Connexion</h3></div>
-                <form class="space-y-3.5" onsubmit="event.preventDefault(); triggerSuccessAuth();">
+
+                <form class="space-y-3.5" action="index.php?action=login_submit" method="POST">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
-                        <input type="email" placeholder="patient@test.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium" required>
+                        <input type="email" name="email" placeholder="patient@test.com" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium" required>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Mot de passe</label>
-                        <input type="password" placeholder="••••••••" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium" required>
+                        <input type="password" name="password" placeholder="••••••••" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium" required>
                     </div>
                     <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-3.5 rounded-xl cursor-pointer transition-all">🔓 S'identifier & Valider</button>
                 </form>
@@ -129,28 +149,24 @@
 
             <div id="modal-reg-box" class="hidden space-y-5">
                 <div class="text-center"><h3 class="text-lg font-extrabold text-slate-900">Créer mon dossier Patient</h3></div>
-                <form class="space-y-3" onsubmit="event.preventDefault(); triggerSuccessAuth();">
+                <form class="space-y-3" action="index.php?action=register_submit" method="POST">
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-0.5">Prénom</label>
-                            <input type="text" placeholder="Youssef" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
+                            <input type="text" name="prenom" placeholder="Youssef" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-0.5">Nom</label>
-                            <input type="text" placeholder="Nassiri" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
+                            <input type="text" name="nom" placeholder="Nassiri" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
                         </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-0.5">Email</label>
-                        <input type="email" placeholder="youssef@mail.com" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-0.5">Téléphone (ERD Row)</label>
-                        <input type="tel" placeholder="0600000000" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
+                        <input type="email" name="email" placeholder="youssef@mail.com" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-0.5">Mot de passe</label>
-                        <input type="password" placeholder="••••••••" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
+                        <input type="password" name="password" placeholder="••••••••" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs" required>
                     </div>
                     <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs py-3.5 rounded-xl cursor-pointer transition-all mt-2">✨ S'inscrire & Réserver</button>
                 </form>
@@ -166,11 +182,14 @@
         const daysList = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
         const monthsList = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
-        // 1. RENDER DES AGENDAS DOCTOLIB POUR TOUTES LES CARDS
+        // 1. RENDER DES AGENDAS DYNAMIC AVEC LES VRAIS CRÉNEAUX DE LA BASE DE DONNÉES
         function renderAllAgendas() {
             document.querySelectorAll('.agenda-grid').forEach(grid => {
                 grid.innerHTML = '';
                 let docId = grid.getAttribute('data-doc-id');
+
+                // Parser les créneaux PHP injectés
+                let dbSlots = JSON.parse(grid.getAttribute('data-slots') || '[]');
                 let startOffset = currentWeekOffset * 5;
 
                 for (let i = startOffset; i < startOffset + 5; i++) {
@@ -180,28 +199,28 @@
                     let dayName = daysList[d.getDay()];
                     let dayNum = d.getDate();
                     let monthName = monthsList[d.getMonth()];
+                    let currentTargetDateStr = d.toISOString().split('T')[0]; // Format YYYY-MM-DD
 
                     let colHtml = `
-                <div class="space-y-1.5 flex flex-col items-center">
-                    <div class="pb-1.5 border-b border-slate-100 w-full text-center mb-1">
-                        <p class="text-[11px] font-bold text-slate-900 capitalize">${dayName}</p>
-                        <p class="text-[10px] font-bold text-slate-400">${dayNum} ${monthName}</p>
-                    </div>
-            `;
-
-                    // Faux dispatching des heures selon le médecin pour faire réaliste
-                    let slots = [];
-                    if (docId === 'alami' && i % 2 === 0) slots = ["09:00", "11:30"];
-                    if (docId === 'benjelloun' && i % 3 === 0) slots = ["14:00", "16:30"];
-                    if (docId === 'elfassi' && i % 2 !== 0) slots = ["08:30", "10:00", "15:10"];
-
-                    if (slots.length > 0) {
-                        slots.forEach(time => {
-                            colHtml += `
-                        <button onclick="handleSlotSelection('${grid.closest('.doc-card').querySelector('h4').innerText}', '${dayName} ${dayNum} ${monthName}', '${time}')" class="w-full py-2 bg-sky-50/70 hover:bg-sky-500 hover:text-white text-sky-600 text-[11px] font-bold rounded-xl transition-all border border-sky-100/40 cursor-pointer">
-                            ${time}
-                        </button>
+                        <div class="space-y-1.5 flex flex-col items-center">
+                            <div class="pb-1.5 border-b border-slate-100 w-full text-center mb-1">
+                                <p class="text-[11px] font-bold text-slate-900 capitalize">${dayName}</p>
+                                <p class="text-[10px] font-bold text-slate-400">${dayNum} ${monthName}</p>
+                            </div>
                     `;
+
+                    // Filtrer les créneaux s7a7 de la base de données correspondant à ce jour précis
+                    let matchingSlots = dbSlots.filter(slot => slot.heure_debut.startsWith(currentTargetDateStr));
+
+                    if (matchingSlots.length > 0) {
+                        matchingSlots.forEach(slot => {
+                            let time = slot.heure_debut.substring(11, 16); // Extraction de HH:MM
+                            colHtml += `
+                                <button onclick="handleSlotSelection('${grid.closest('.doc-card').querySelector('h4').innerText}', '${dayName} ${dayNum} ${monthName}', '${time}', '${docId}', '${slot.id}')"
+                                        class="w-full py-2 bg-sky-50/70 hover:bg-sky-500 hover:text-white text-sky-600 text-[11px] font-bold rounded-xl transition-all border border-sky-100/40 cursor-pointer">
+                                    ${time}
+                                </button>
+                            `;
                         });
                     } else {
                         colHtml += `<span class="text-slate-300 text-xs py-2 block">—</span>`;
@@ -213,7 +232,6 @@
             });
         }
 
-        // 2. NAVIGUER DANS LE TEMPS (MAX 2 SEMAINES)
         function navigateAllAgendas(direction) {
             if (direction === 'next' && currentWeekOffset === 0) {
                 currentWeekOffset = 1;
@@ -229,39 +247,36 @@
             renderAllAgendas();
         }
 
-        // 3. ACTION AU CLIC SUR UNE HEURE
-        function handleSlotSelection(docName, dateStr, timeStr) {
+        // 3. SELECTION D'UN CRÉNEAU DYNAMIC
+        function handleSlotSelection(docName, dateStr, timeStr, docId, creneauId) {
             selectedSlotInfo = `${dateStr} à ${timeStr} avec ${docName}`;
 
+            // Remplir le formulaire caché de réservation
+            document.getElementById('submit-doc-id').value = docId;
+            document.getElementById('submit-creneau-id').value = creneauId;
+
             if (isUserLoggedIn) {
-                alert(`Félicitations! Votre rendez-vous est bloqué pour le : ${selectedSlotInfo}.`);
-                window.location.href = "?action=patient_dashboard";
+                // Soumettre directement si le patient est identifié
+                document.getElementById('final-booking-form').submit();
             } else {
+                // Ouvrir le modal d'identification dyalk sinon
                 document.getElementById('summary-slot-txt').innerText = `${dateStr} à ${timeStr} (${docName})`;
                 document.getElementById('auth-modal-overlay').classList.remove('hidden');
             }
         }
 
-        // 4. MOTEUR DE FILTRAGE COMBINÉ (RECHERCHE + SPÉCIALITÉ)
-        function filterSpeciality(spec) {
-            currentSpeciality = spec;
-            document.querySelectorAll('.spec-btn').forEach(btn => {
-                btn.classList.remove('bg-sky-500', 'text-white', 'shadow-lg', 'shadow-sky-500/20', 'font-bold');
-                btn.classList.add('bg-white', 'text-slate-700', 'border-slate-100', 'font-semibold');
-            });
-            document.getElementById('btn-' + spec).classList.remove('bg-white', 'text-slate-700', 'border-slate-100', 'font-semibold');
-            document.getElementById('btn-' + spec).classList.add('bg-sky-500', 'text-white', 'shadow-lg', 'shadow-sky-500/20', 'font-bold');
-            applyFilters();
+        // 4. FILTRAGE PAR CLIC DE SPÉCIALITÉ (Redirection URL pour faire le fetch PHP)
+        function filterSpeciality(specId) {
+            window.location.href = "index.php?action=home&specialite=" + specId;
         }
 
+        // 5. RECHERCHE EN TEMPS RÉEL SUR LES CARDS CHARGÉES
         function applyFilters() {
             const searchVal = document.getElementById('nameSearch').value.toLowerCase().trim();
 
             document.querySelectorAll('.doc-card').forEach(card => {
-                const matchesSpec = (currentSpeciality === 'all' || card.getAttribute('data-spec') === currentSpeciality);
                 const matchesName = card.getAttribute('data-name').includes(searchVal);
-
-                if (matchesSpec && matchesName) {
+                if (matchesName) {
                     card.classList.remove('hidden');
                 } else {
                     card.classList.add('hidden');
@@ -269,7 +284,6 @@
             });
         }
 
-        // Modal Helpers
         function switchModalMode(mode) {
             if (mode === 'reg') {
                 document.getElementById('modal-login-box').classList.add('hidden');
@@ -281,14 +295,19 @@
         }
         function closeAuthModal() { document.getElementById('auth-modal-overlay').classList.add('hidden'); }
 
-        function triggerSuccessAuth() {
-            closeAuthModal();
-            alert(`Identification réussie ! Le rendez-vous [${selectedSlotInfo}] a été inséré avec succès dans votre espace Patient.`);
-            isUserLoggedIn = true;
-            window.location.href = "?action=patient_appointments";
+        // Active l'état actif sur la spécialité choisie au chargement
+        if (currentSpeciality !== 'all') {
+            document.getElementById('btn-all').classList.remove('bg-sky-500', 'text-white', 'shadow-lg');
+            document.getElementById('btn-all').classList.add('bg-white', 'text-slate-700', 'border-slate-100');
+
+            let activeBtn = document.getElementById('btn-' + currentSpeciality);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-700', 'border-slate-100');
+                activeBtn.classList.add('bg-sky-500', 'text-white', 'shadow-lg', 'shadow-sky-500/20', 'font-bold');
+            }
         }
 
-        // Lancement au chargement global
+        // Démarrage global
         renderAllAgendas();
     </script>
 
