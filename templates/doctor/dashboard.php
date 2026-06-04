@@ -1,24 +1,14 @@
 <?php
-// 1. Assurer que la session est démarrée
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+use App\Helpers\SessionHelper;
+use App\Helpers\ViewHelper;
 
-// 2. Sécurité : Éviter les warnings si la variable n'est pas passée par le Controller
+SessionHelper::ensureStarted();
+
 if (!isset($appointments)) {
     $appointments = [];
 }
 
-// 3. Calcul des statistiques réelles basées sur la liste des RDV passée par le Controller
-$countConfirmes = 0;
-$countAttente = 0;
-$countAnnules = 0;
-
-foreach ($appointments as $rdv) {
-    if ($rdv['statut'] === 'Confirmé') $countConfirmes++;
-    if ($rdv['statut'] === 'En attente') $countAttente++;
-    if ($rdv['statut'] === 'Annulé') $countAnnules++;
-}
+$counts = ViewHelper::countByStatus($appointments);
 
 include __DIR__ . '/../layout/header.php';
 ?>
@@ -32,7 +22,7 @@ include __DIR__ . '/../layout/header.php';
                 <div class="px-3 py-2 border-b border-slate-800/60">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Espace Professionnel</p>
                     <h4 class="text-white font-extrabold text-sm tracking-tight flex items-center gap-2 mt-0.5">
-                        🩺 Dr. <?= htmlspecialchars($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?>
+                        🩺 Dr. <?= ViewHelper::escape($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?>
                     </h4>
                 </div>
 
@@ -61,7 +51,7 @@ include __DIR__ . '/../layout/header.php';
             <!-- ========================================== -->
             <div id="doc-stats" class="space-y-6 doc-tab-content">
                 <div class="border-b border-slate-200/60 pb-3">
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. <?= htmlspecialchars($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?></h2>
+                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Bonjour, Dr. <?= ViewHelper::escape($_SESSION['user']['nom'] ?? 'Ahmed Alami') ?></h2>
                     <p class="text-xs text-slate-400">Voici l'état d'activité de votre cabinet pour aujourd'hui.</p>
                 </div>
 
@@ -69,15 +59,15 @@ include __DIR__ . '/../layout/header.php';
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">RDV Confirmés</p>
-                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1"><?= $countConfirmes ?></h3>
+                        <h3 class="text-2xl font-extrabold text-emerald-600 mt-1"><?= $counts['confirmed'] ?></h3>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">En Attente</p>
-                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1"><?= $countAttente ?></h3>
+                        <h3 class="text-2xl font-extrabold text-amber-500 mt-1"><?= $counts['pending'] ?></h3>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Annulés</p>
-                        <h3 class="text-2xl font-extrabold text-slate-400 mt-1"><?= $countAnnules ?></h3>
+                        <h3 class="text-2xl font-extrabold text-slate-400 mt-1"><?= $counts['cancelled'] ?></h3>
                     </div>
                 </div>
 
@@ -118,16 +108,9 @@ include __DIR__ . '/../layout/header.php';
                                 <?php foreach ($appointments as $rdv): ?>
                                     <tr class="hover:bg-slate-50/30 transition-colors">
                                         <td class="p-4 font-bold text-slate-700"><?= date('d/m à H:i', strtotime($rdv['heure_debut'])) ?></td>
-                                        <td class="p-4 font-semibold text-slate-900"><?= htmlspecialchars($rdv['patient_nom'] . ' ' . $rdv['patient_prenom']) ?></td>
+                                        <td class="p-4 font-semibold text-slate-900"><?= ViewHelper::escape($rdv['patient_nom'] . ' ' . $rdv['patient_prenom']) ?></td>
                                         <td class="p-4">
-                                            <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold
-                                                <?= $rdv['statut'] === 'En attente' ? 'bg-amber-50 text-amber-700 border border-amber-100' : '' ?>
-                                                <?= $rdv['statut'] === 'Confirmé' ? 'bg-sky-50 text-sky-700 border border-sky-100' : '' ?>
-                                                <?= $rdv['statut'] === 'Terminé' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : '' ?>
-                                                <?= $rdv['statut'] === 'Annulé' ? 'bg-rose-50 text-rose-700 border border-rose-100' : '' ?>
-                                            ">
-                                                <?= htmlspecialchars($rdv['statut']) ?>
-                                            </span>
+                                            <?= ViewHelper::renderStatusBadge($rdv['statut']) ?>
                                         </td>
                                         <td class="p-4 text-right space-x-1">
                                             <?php if ($rdv['statut'] === 'En attente'): ?>
@@ -145,7 +128,7 @@ include __DIR__ . '/../layout/header.php';
                                                 </form>
                                             <?php elseif ($rdv['statut'] === 'Confirmé'): ?>
                                                 <!-- Lancer la Consultation via l-JS m9ad -->
-                                                <button onclick="prepareConsultation(<?= $rdv['id_rdv'] ?>, '<?= htmlspecialchars($rdv['patient_nom'] . ' ' . $rdv['patient_prenom'] . ' (RDV de ' . date('H:i', strtotime($rdv['heure_debut'])) . ')') ?>')" class="px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">🩺 Lancer la consultation</button>
+                                                <button onclick="prepareConsultation(<?= $rdv['id_rdv'] ?>, '<?= ViewHelper::escape($rdv['patient_nom'] . ' ' . $rdv['patient_prenom'] . ' (RDV de ' . date('H:i', strtotime($rdv['heure_debut'])) . ')') ?>')" class="px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-500 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">🩺 Lancer la consultation</button>
                                             <?php else: ?>
                                                 <span class="text-xs text-slate-400 italic">Aucune action</span>
                                             <?php endif; ?>
@@ -198,32 +181,16 @@ include __DIR__ . '/../layout/header.php';
         </div>
     </div>
 
-    <!-- MOTEUR INTERACTIVE SIDEBAR JS POUR LE MEDECIN -->
+    <?php include __DIR__ . '/../layout/tab-switcher.php'; ?>
+
     <script>
         function switchDoctorTab(tabId) {
-            // 1. Cacher tous les contenus d'onglets
-            document.querySelectorAll('.doc-tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            // 2. Afficher l'onglet actif
-            document.getElementById(tabId).classList.remove('hidden');
-
-            // 3. Réinitialiser les styles de tous les boutons de la Sidebar du médecin
-            document.querySelectorAll('.doc-nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'bg-gradient-to-r', 'from-emerald-500/10', 'to-emerald-500/20', 'border-emerald-500/20', 'shadow-xs', 'font-bold');
-                btn.classList.add('text-slate-400', 'font-semibold');
-            });
-
-            // 4. Activer le style sur le bouton cliqué
-            const activeBtn = document.getElementById('btn-' + tabId);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-slate-400', 'font-semibold');
-                activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-emerald-500/10', 'to-emerald-500/20', 'border-emerald-500/20', 'shadow-xs', 'font-bold');
-            }
+            switchTab(tabId, 'doc-tab-content', 'doc-nav-btn',
+                ['text-white', 'bg-gradient-to-r', 'from-emerald-500/10', 'to-emerald-500/20', 'border-emerald-500/20', 'shadow-xs', 'font-bold'],
+                ['text-slate-400', 'font-semibold']
+            );
         }
 
-        // Fonction magique pour lier le clic de l'agenda avec l'onglet Consultation
         function prepareConsultation(rdvId, patientDetails) {
             document.getElementById('input-rdv-id').value = rdvId;
             document.getElementById('active-patient-display').innerText = "👤 " + patientDetails;

@@ -1,36 +1,38 @@
 <?php
-// Démarrer la session en premier lieu
 ob_start();
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Load shared helpers and base classes
+require_once __DIR__ . '/../src/Helpers/SessionHelper.php';
+require_once __DIR__ . '/../src/Helpers/ViewHelper.php';
+require_once __DIR__ . '/../src/Repository/BaseRepository.php';
 
+use App\Helpers\SessionHelper;
 
-// 1. Récupérer l'objet PDO de la base de données (Fichier dyalk li fih return $pdo)
+SessionHelper::ensureStarted();
+
+// 1. Récupérer l'objet PDO de la base de données
 $pdo = require_once __DIR__ . '/../config/database.php';
 
-// 2. Inclure les Controllers (Manuellement ou via Autoload)
+// 2. Inclure les Controllers et Repositories
+require_once __DIR__ . '/../src/Repository/DoctorRepository.php';
+require_once __DIR__ . '/../src/Repository/PatientRepository.php';
 require_once __DIR__ . '/../src/Controller/DoctorController.php';
 require_once __DIR__ . '/../src/Controller/PatientController.php';
 require_once __DIR__ . '/../src/Controller/AuthController.php';
 
 use App\Controller\AuthController;
-
-$authController = new AuthController($pdo);
-
 use App\Controller\DoctorController;
 use App\Controller\PatientController;
 
-// 3. Instancier les Controllers en leur passant la connexion $pdo
+// 3. Instancier les Controllers
+$authController = new AuthController($pdo);
 $doctorController = new DoctorController($pdo);
 $patientController = new PatientController($pdo);
 
-// 4. Déterminer l'action demandée (Par défaut 'home')
+// 4. Déterminer l'action demandée
 $action = $_GET['action'] ?? 'home';
 
-// 5. Le Switch Central (Routing)
-// 5. Le Switch Central (Routing Corrigé)
+// 5. Routing
 switch ($action) {
 
     // ----- CLIENT / PATIENT -----
@@ -59,9 +61,8 @@ switch ($action) {
         $doctorController->finaliserConsultationAction();
         break;
 
-    // ----- AUTHENTIFICATION (L-FIX HNA) -----
+    // ----- AUTHENTIFICATION -----
     case 'login':
-        // Hada hwa li ghadi i-akhod l-POST wlla i-affichi l-view 3la 7sab chno jây
         $authController->loginAction();
         break;
 
@@ -73,7 +74,7 @@ switch ($action) {
         include __DIR__ . '/../templates/admin/dashboard.php';
         break;
 
-    // ----- DEFAULT DE SÉCURITÉ -----
+    // ----- DEFAULT -----
     default:
         $patientController->index();
         break;

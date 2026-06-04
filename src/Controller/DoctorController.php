@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Helpers\SessionHelper;
 use App\Repository\DoctorRepository;
 use PDO;
 
@@ -12,30 +13,15 @@ class DoctorController {
         $this->doctorRepository = new DoctorRepository($pdo);
     }
 
-    /**
-     * Render du Dashboard Médecin
-     */
     public function dashboard(): void {
-        if (session_status() === PHP_SESSION_NONE) { session_start(); }
+        SessionHelper::requireRole('medecin');
 
-        // Sécurité Médecin
-        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'medecin') {
-            header('Location: index.php?action=login');
-            exit();
-        }
-
-        // Récupérer l'id_medecin stocké en session lors du login
         $idMedecin = $_SESSION['user']['id_medecin'] ?? 0;
-
-        // Récupérer les rendez-vous via le Repository
         $appointments = $this->doctorRepository->getDoctorRendezVous($idMedecin);
 
         include __DIR__ . '/../../templates/doctor/dashboard.php';
     }
 
-    /**
-     * Action de modification de statut (Confirmer/Annuler) via POST
-     */
     public function updateStatutAction(): void {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idRdv = (int)($_POST['id_rdv'] ?? 0);
@@ -45,13 +31,9 @@ class DoctorController {
                 $this->doctorRepository->updateRendezVousStatut($idRdv, $actionStatut);
             }
         }
-        header('Location: index.php?action=doctor_dashboard');
-        exit();
+        SessionHelper::redirect('doctor_dashboard');
     }
 
-    /**
-     * Action pour clôturer et ajouter l'ordonnance
-     */
     public function finaliserConsultationAction(): void {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idRdv = (int)($_POST['id_rdv'] ?? 0);
@@ -59,10 +41,9 @@ class DoctorController {
             $ordonnance = trim($_POST['ordonnance'] ?? '');
 
             if ($idRdv > 0) {
-                $this->doctorRepository->clôturerConsultation($idRdv, $diagnostic, $ordonnance);
+                $this->doctorRepository->clôturerConsultation($idRdv, $ordonnance);
             }
         }
-        header('Location: index.php?action=doctor_dashboard');
-        exit();
+        SessionHelper::redirect('doctor_dashboard');
     }
 }

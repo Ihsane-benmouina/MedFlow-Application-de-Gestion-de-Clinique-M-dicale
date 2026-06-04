@@ -1,16 +1,14 @@
-<?php include __DIR__ . '/../layout/header.php';
-// 1. Assurer que la session est démarrée
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+<?php
+use App\Helpers\SessionHelper;
+use App\Helpers\ViewHelper;
 
-// 2. Sécurité : Éviter les warnings si la page est appelée sans passer par le Controller
+SessionHelper::ensureStarted();
+
 if (!isset($specialites)) { $specialites = []; }
 if (!isset($medecinsList)) { $medecinsList = []; }
 if (!isset($myAppointments)) { $myAppointments = []; }
 if (!isset($myOrdonnances)) { $myOrdonnances = []; }
 
-// 3. Sécurité : Si $_SESSION['user'] n'est pas définie, créer un tableau vide fictif pour éviter les crashs d'affichage
 if (!isset($_SESSION['user'])) {
     $_SESSION['user'] = [
             'id' => 0,
@@ -32,7 +30,7 @@ include __DIR__ . '/../layout/header.php';
                 <div class="px-3 py-2 border-b border-slate-800/60">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-sky-400">Espace Personnel</p>
                     <h4 class="text-white font-extrabold text-sm tracking-tight flex items-center gap-2 mt-0.5">
-                        👤 <?= htmlspecialchars($_SESSION['user']['prenom'] . ' ' . $_SESSION['user']['nom']) ?>
+                        👤 <?= ViewHelper::escape($_SESSION['user']['prenom'] . ' ' . $_SESSION['user']['nom']) ?>
                     </h4>
                 </div>
 
@@ -88,7 +86,7 @@ include __DIR__ . '/../layout/header.php';
 
                         <?php foreach ($specialites as $spec): ?>
                             <button onclick="filterSpeciality('<?= $spec['id'] ?>')" class="snap-start shrink-0 inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl text-sm font-semibold bg-white text-slate-700 border border-slate-100 cursor-pointer transition-all spec-btn" id="btn-<?= $spec['id'] ?>">
-                                🩺 <span><?= htmlspecialchars($spec['nom']) ?></span>
+                                🩺 <span><?= ViewHelper::escape($spec['nom']) ?></span>
                             </button>
                         <?php endforeach; ?>
                     </div>
@@ -102,12 +100,12 @@ include __DIR__ . '/../layout/header.php';
                         <?php foreach ($medecinsList as $medecin): ?>
                             <div class="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col justify-between gap-6 doc-card"
                                  data-spec="<?= $medecin['id_specialite'] ?>"
-                                 data-name="<?= mb_strtolower(htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom']), 'UTF-8') ?>">
+                                 data-name="<?= mb_strtolower(ViewHelper::escape($medecin['nom'] . ' ' . $medecin['prenom']), 'UTF-8') ?>">
                                 <div class="flex gap-4">
                                     <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-extrabold text-lg">Dr</div>
                                     <div>
-                                        <h4 class="font-bold text-slate-900 text-sm">Dr. <?= htmlspecialchars($medecin['nom'] . ' ' . $medecin['prenom']) ?></h4>
-                                        <p class="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-1 inline-block"><?= htmlspecialchars($medecin['specialite_nom']) ?></p>
+                                        <h4 class="font-bold text-slate-900 text-sm">Dr. <?= ViewHelper::escape($medecin['nom'] . ' ' . $medecin['prenom']) ?></h4>
+                                        <p class="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md mt-1 inline-block"><?= ViewHelper::escape($medecin['specialite_nom']) ?></p>
                                     </div>
                                 </div>
                                 <div>
@@ -161,13 +159,10 @@ include __DIR__ . '/../layout/header.php';
                         <?php else: ?>
                             <?php foreach ($myAppointments as $rdv): ?>
                                 <tr>
-                                    <td class="p-4 font-bold text-slate-900">Dr. <?= htmlspecialchars($rdv['medecin_nom'] . ' ' . $rdv['medecin_prenom']) ?></td>
+                                    <td class="p-4 font-bold text-slate-900">Dr. <?= ViewHelper::escape($rdv['medecin_nom'] . ' ' . $rdv['medecin_prenom']) ?></td>
                                     <td class="p-4 text-slate-600 font-medium"><?= date('d M Y - H:i', strtotime($rdv['heure_debut'])) ?></td>
                                     <td class="p-4">
-                                        <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold
-                                            <?= $rdv['statut'] === 'Confirmé' || $rdv['statut'] === 'Terminé' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100' ?>">
-                                            <?= htmlspecialchars($rdv['statut']) ?>
-                                        </span>
+                                        <?= ViewHelper::renderStatusBadge($rdv['statut']) ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -196,13 +191,13 @@ include __DIR__ . '/../layout/header.php';
                             <div class="flex justify-between items-start border-b border-slate-100 pb-3">
                                 <div>
                                     <h4 class="font-bold text-slate-900 text-sm">Ordonnance Émise</h4>
-                                    <p class="text-xs text-slate-400">Par: <span class="font-semibold text-slate-700">Dr. <?= htmlspecialchars($ordo['medecin_nom'] . ' ' . $ordo['medecin_prenom']) ?></span></p>
+                                    <p class="text-xs text-slate-400">Par: <span class="font-semibold text-slate-700">Dr. <?= ViewHelper::escape($ordo['medecin_nom'] . ' ' . $ordo['medecin_prenom']) ?></span></p>
                                 </div>
                                 <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600 font-medium">Le <?= date('d/m/Y', strtotime($ordo['date_creation'])) ?></span>
                             </div>
 
                             <div class="p-4 bg-slate-50 rounded-xl border border-slate-100/70 font-mono text-xs text-slate-700 whitespace-pre-line leading-relaxed">
-                                <?= nl2br(htmlspecialchars($ordo['contenu'])) ?>
+                                <?= nl2br(ViewHelper::escape($ordo['contenu'])) ?>
                             </div>
 
                             <div class="flex justify-end">
@@ -218,22 +213,15 @@ include __DIR__ . '/../layout/header.php';
         </div>
     </div>
 
+    <?php include __DIR__ . '/../layout/tab-switcher.php'; ?>
+
     <!-- MOTEUR INTERACTIVE SIDEBAR JS POUR LE PATIENT -->
     <script>
         function switchPatientTab(tabId) {
-            document.querySelectorAll('.pat-tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            document.getElementById(tabId).classList.remove('hidden');
-
-            document.querySelectorAll('.pat-nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
-                btn.classList.add('text-slate-400', 'font-semibold');
-            });
-
-            const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-slate-400', 'font-semibold');
-            activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
+            switchTab(tabId, 'pat-tab-content', 'pat-nav-btn',
+                ['text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold'],
+                ['text-slate-400', 'font-semibold']
+            );
         }
 
         let currentSpeciality = 'all';
@@ -254,7 +242,6 @@ include __DIR__ . '/../layout/header.php';
 
         function filterByName() { applyFilters(); }
 
-        // Filtrage instantané JS dyalk kima hwa
         function applyFilters() {
             const searchVal = document.getElementById('nameSearch').value.toLowerCase().trim();
             document.querySelectorAll('.doc-card').forEach(card => {

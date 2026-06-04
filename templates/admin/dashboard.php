@@ -207,26 +207,14 @@
         </div>
     </div>
 
+    <?php include __DIR__ . '/../layout/tab-switcher.php'; ?>
+
     <script>
         function switchAdminTab(tabId) {
-            // 1. Cacher tous les contenus d'onglets
-            document.querySelectorAll('.admin-tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-
-            // 2. Afficher l'onglet actif
-            document.getElementById(tabId).classList.remove('hidden');
-
-            // 3. Réinitialiser les styles de tous les boutons de la Sidebar
-            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
-                btn.classList.add('text-slate-400', 'font-semibold');
-            });
-
-            // 4. Activer le style sur le bouton cliqué
-            const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-slate-400', 'font-semibold');
-            activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
+            switchTab(tabId, 'admin-tab-content', 'admin-nav-btn',
+                ['text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold'],
+                ['text-slate-400', 'font-semibold']
+            );
         }
 
         // Fonctions utilitaires pour la démo UI (Modal & Alertes)
