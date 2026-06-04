@@ -7,4 +7,24 @@ class DoctorRepository
     {
         $this->pdo = $pdo;
     }
+
+    public function findAll():array{
+
+        $sql="
+       
+            m.id,
+            u.nom,
+            u.prenom,
+            u.email,
+            s.nom AS specialite,
+            m.actif
+           FROM medecins m
+           JOIN users u
+           ON m.id_user = u.id
+           JOIN specialites s
+           ON m.id_specialite = s.id";
+
+        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
 }
