@@ -1,3 +1,6 @@
 .idea/
 .vscode/
 .env
+/vendor/
+.phpunit.cache/
+composer.lock
