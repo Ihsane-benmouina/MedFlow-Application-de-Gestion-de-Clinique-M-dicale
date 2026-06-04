@@ -1,108 +1,107 @@
-CREATE DATABASE clinique_db;
-USE clinique_db;
+CREATE DATABASE medflow_db;
+USE medflow_db;
 
--- =========================
--- Table: users
--- =========================
+
+
 CREATE TABLE users (
                        id INT AUTO_INCREMENT PRIMARY KEY,
-                       firstname VARCHAR(100) NOT NULL,
-                       lastname VARCHAR(100) NOT NULL,
+                       nom VARCHAR(100) NOT NULL,
+                       prenom VARCHAR(100) NOT NULL,
                        email VARCHAR(150) UNIQUE NOT NULL,
                        password VARCHAR(255) NOT NULL,
-                       phone VARCHAR(20),
-                       role ENUM('admin', 'doctor', 'patient') NOT NULL
+                       role ENUM('admin', 'medecin', 'patient') NOT NULL
 );
 
--- =========================
--- Table: specialities
--- =========================
-CREATE TABLE specialities (
-                              id INT AUTO_INCREMENT PRIMARY KEY,
-                              name VARCHAR(100) NOT NULL,
-                              description VARCHAR(255)
+
+
+CREATE TABLE specialites (
+                             id INT AUTO_INCREMENT PRIMARY KEY,
+                             nom VARCHAR(100) NOT NULL,
+                             description VARCHAR(255)
 );
 
--- =========================
--- Table: doctors
--- =========================
-CREATE TABLE doctors (
-                         id INT AUTO_INCREMENT PRIMARY KEY,
-                         id_user INT NOT NULL,
-                         id_speciality INT NOT NULL,
-                         is_active BOOLEAN DEFAULT TRUE,
 
-                         CONSTRAINT fk_doctor_user
-                             FOREIGN KEY (id_user)
-                                 REFERENCES users(id)
-                                 ON DELETE CASCADE,
+CREATE TABLE medecins (
+                          id INT AUTO_INCREMENT PRIMARY KEY,
+                          id_user INT NOT NULL UNIQUE,
+                          id_specialite INT NOT NULL,
+                          actif BOOLEAN DEFAULT TRUE,
 
-                         CONSTRAINT fk_doctor_speciality
-                             FOREIGN KEY (id_speciality)
-                                 REFERENCES specialities(id)
-                                 ON DELETE RESTRICT
+                          CONSTRAINT fk_medecin_user
+                              FOREIGN KEY (id_user)
+                                  REFERENCES users(id)
+                                  ON DELETE CASCADE,
+
+                          CONSTRAINT fk_medecin_specialite
+                              FOREIGN KEY (id_specialite)
+                                  REFERENCES specialites(id)
+                                  ON DELETE RESTRICT
 );
 
--- =========================
--- Table: timeslots
--- =========================
-CREATE TABLE timeslots (
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           start_time TIMESTAMP NOT NULL,
-                           end_time DATETIME  NOT NULL,
-                           is_available BOOLEAN DEFAULT TRUE,
-                           id_doctor INT NOT NULL,
 
-                           CONSTRAINT fk_timeslot_doctor
-                               FOREIGN KEY (id_doctor)
-                                   REFERENCES doctors(id)
-                                   ON DELETE CASCADE
+
+CREATE TABLE creneaux (
+                          id INT AUTO_INCREMENT PRIMARY KEY,
+
+                          heure_debut DATETIME NOT NULL,
+                          heure_fin DATETIME NOT NULL,
+
+                          disponible BOOLEAN DEFAULT TRUE,
+
+                          id_medecin INT NOT NULL,
+
+                          CONSTRAINT fk_creneau_medecin
+                              FOREIGN KEY (id_medecin)
+                                  REFERENCES medecins(id)
+                                  ON DELETE CASCADE
 );
 
--- =========================
--- Table: appointments
--- =========================
-CREATE TABLE appointments (
-                              id INT AUTO_INCREMENT PRIMARY KEY,
+-- ===================================
+-- RENDEZ_VOUS
+-- ===================================
 
-                              id_patient INT NOT NULL,
-                              id_doctor INT NOT NULL,
+CREATE TABLE rendez_vous (
+                             id INT AUTO_INCREMENT PRIMARY KEY,
 
-                              status ENUM(
+                             id_patient INT NOT NULL,
+                             id_medecin INT NOT NULL,
+                             id_creneau INT NOT NULL,
+
+                             statut ENUM(
         'En attente',
-        'Confirmé',
         'Annulé',
         'Terminé'
-    ) NOT NULL DEFAULT 'En attente',
+    ) DEFAULT 'En attente',
 
-                              id_timeslot INT NOT NULL,
+                             CONSTRAINT fk_rendezvous_patient
+                                 FOREIGN KEY (id_patient)
+                                     REFERENCES users(id)
+                                     ON DELETE CASCADE,
 
-                              CONSTRAINT fk_appointment_patient
-                                  FOREIGN KEY (id_patient)
-                                      REFERENCES users(id)
-                                      ON DELETE CASCADE,
+                             CONSTRAINT fk_rendezvous_medecin
+                                 FOREIGN KEY (id_medecin)
+                                     REFERENCES medecins(id)
+                                     ON DELETE CASCADE,
 
-                              CONSTRAINT fk_appointment_doctor
-                                  FOREIGN KEY (id_doctor)
-                                      REFERENCES doctors(id)
-                                      ON DELETE CASCADE,
-
-                              CONSTRAINT fk_appointment_timeslot
-                                  FOREIGN KEY (id_timeslot)
-                                      REFERENCES timeslots(id)
-                                      ON DELETE CASCADE
+                             CONSTRAINT fk_rendezvous_creneau
+                                 FOREIGN KEY (id_creneau)
+                                     REFERENCES creneaux(id)
+                                     ON DELETE CASCADE
 );
 
--- =========================
--- Table: prescriptions
--- =========================
-CREATE TABLE prescriptions (
-                               id INT AUTO_INCREMENT PRIMARY KEY,
-                               description VARCHAR(255) NOT NULL,
-                               id_appointment INT NOT NULL UNIQUE,
+-- ===================================
+-- ORDONNANCES
+-- ===================================
 
-                               CONSTRAINT fk_prescription_appointment
-                                   FOREIGN KEY (id_appointment)
-                                       REFERENCES appointments(id)
-                                       ON DELETE CASCADE
+CREATE TABLE ordonnances (
+                             id INT AUTO_INCREMENT PRIMARY KEY,
+
+                             description TEXT NOT NULL,
+
+                             id_rendez_vous INT NOT NULL UNIQUE,
+
+                             CONSTRAINT fk_ordonnance_rendezvous
+                                 FOREIGN KEY (id_rendez_vous)
+                                     REFERENCES rendez_vous(id)
+                                     ON DELETE CASCADE
 );

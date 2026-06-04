@@ -17,7 +17,7 @@
 <header class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
-        <a href="../../public/index.php" class="flex items-center gap-3 cursor-pointer">
+        <a href="/../MedFlow-Application-de-Gestion-de-Clinique-Médicale/templates/patient/recherche.php" class="flex items-center gap-3 cursor-pointer">
             <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-sky-200">
                 <span class="text-xl font-bold">M</span>
             </div>
@@ -28,7 +28,7 @@
         </a>
 
         <div class="flex items-center gap-4">
-            <a href="../templates/auth/login_register.php" id="header-auth-btn" class="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl border border-slate-200/60 transition-all cursor-pointer shadow-2xs no-underline">
+            <a href="../auth/login_register.php?action=login" id="header-auth-btn" class="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl border border-slate-200/60 transition-all cursor-pointer shadow-2xs no-underline">
                 🔑 <span id="header-btn-text">Se Connecter</span>
             </a>
         </div>
