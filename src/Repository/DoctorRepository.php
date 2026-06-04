@@ -29,7 +29,7 @@ class DoctorRepository
     
     public function findById(int $id): ?array
     {
-    $sql = "
+        $sql = "
         SELECT
             m.id,
             u.nom,
@@ -45,11 +45,37 @@ class DoctorRepository
         WHERE m.id = :id
     ";
 
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute(['id' => $id]);
+         $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $id]);
 
-    $doctor = $stmt->fetch(PDO::FETCH_ASSOC);
+      $doctor = $stmt->fetch(PDO::FETCH_ASSOC);
 
     return $doctor ?: null;
+    }
+
+    public function create(Doctor $doctor): bool
+{
+    $sql = "
+        INSERT INTO medecins
+        (
+            id_user,
+            id_specialite,
+            actif
+        )
+        VALUES
+        (
+            :id_user,
+            :id_specialite,
+            :actif
+        )
+    ";
+
+    $stmt = $this->pdo->prepare($sql);
+
+    return $stmt->execute([
+        'id_user' => $doctor->getIdUser(),
+        'id_specialite' => $doctor->getIdSpeciality(),
+        'actif' => $doctor->getIsActive()
+    ]);
 }
 }
