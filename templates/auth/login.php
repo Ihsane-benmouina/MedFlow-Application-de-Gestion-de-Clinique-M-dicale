@@ -17,18 +17,19 @@
             <!-- Messages d'erreur -->
             <?php if (isset($_SESSION['error_msg'])): ?>
                 <div class="bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-xl border border-rose-100 text-center">
-                    <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                    <?= htmlspecialchars($_SESSION['error_msg']); unset($_SESSION['error_msg']); ?>
                 </div>
             <?php endif; ?>
 
             <!-- Message de succès -->
             <?php if (isset($_SESSION['success_msg'])): ?>
                 <div class="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl border border-emerald-100 text-center">
-                    <?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                    <?= htmlspecialchars($_SESSION['success_msg']); unset($_SESSION['success_msg']); ?>
                 </div>
             <?php endif; ?>
 
             <form class="space-y-4" action="index.php?action=login" method="POST">
+                <?= csrfTokenField() ?>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Adresse Email</label>
                     <input type="email" name="email" placeholder="nom@exemple.com"
@@ -63,6 +64,7 @@
             </div>
 
             <form class="space-y-3.5" action="index.php?action=register" method="POST">
+                <?= csrfTokenField() ?>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>

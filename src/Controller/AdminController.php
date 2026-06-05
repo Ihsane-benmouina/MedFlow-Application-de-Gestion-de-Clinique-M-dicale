@@ -63,6 +63,11 @@ class AdminController
         AuthMiddleware::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                header('Location: index.php?action=admin_dashboard');
+                exit();
+            }
+
             $nom = trim($_POST['nom'] ?? '');
             $prenom = trim($_POST['prenom'] ?? '');
             $email = trim($_POST['email'] ?? '');
@@ -100,6 +105,11 @@ class AdminController
         AuthMiddleware::requireRole('admin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                header('Location: index.php?action=admin_dashboard');
+                exit();
+            }
+
             $idMedecin = (int) ($_POST['id_medecin'] ?? 0);
             $nom = trim($_POST['nom'] ?? '');
             $prenom = trim($_POST['prenom'] ?? '');

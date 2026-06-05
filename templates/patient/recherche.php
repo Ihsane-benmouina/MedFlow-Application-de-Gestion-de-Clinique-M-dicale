@@ -76,6 +76,7 @@ include __DIR__ . '/../layout/header.php';
                             ?>
                             <?php if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'patient'): ?>
                                 <form method="POST" action="index.php?action=reserver_rdv" class="inline">
+                                    <?= csrfTokenField() ?>
                                     <input type="hidden" name="id_creneau" value="<?= $creneau['id'] ?>">
                                     <input type="hidden" name="id_medecin" value="<?= $med['id_medecin'] ?>">
                                     <button type="submit"

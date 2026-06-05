@@ -41,12 +41,12 @@ include __DIR__ . '/../layout/header.php';
         <!-- Messages -->
         <?php if (isset($_SESSION['success_msg'])): ?>
             <div class="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl border border-emerald-100">
-                <?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                <?= htmlspecialchars($_SESSION['success_msg']); unset($_SESSION['success_msg']); ?>
             </div>
         <?php endif; ?>
         <?php if (isset($_SESSION['error_msg'])): ?>
             <div class="bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-xl border border-rose-100">
-                <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                <?= htmlspecialchars($_SESSION['error_msg']); unset($_SESSION['error_msg']); ?>
             </div>
         <?php endif; ?>
 
@@ -89,6 +89,7 @@ include __DIR__ . '/../layout/header.php';
                         <div class="mt-3 flex flex-wrap gap-2">
                             <?php foreach ($med['creneaux'] as $cr): ?>
                                 <form method="POST" action="index.php?action=reserver_rdv" class="inline">
+                                    <?= csrfTokenField() ?>
                                     <input type="hidden" name="id_creneau" value="<?= $cr['id'] ?>">
                                     <input type="hidden" name="id_medecin" value="<?= $med['id_medecin'] ?>">
                                     <button type="submit"

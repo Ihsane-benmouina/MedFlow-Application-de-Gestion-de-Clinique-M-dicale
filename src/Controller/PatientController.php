@@ -72,6 +72,12 @@ class PatientController
         AuthMiddleware::requireRole('patient');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                $_SESSION['error_msg'] = "Session expirée. Veuillez réessayer.";
+                header('Location: index.php?action=patient_dashboard');
+                exit();
+            }
+
             $idPatient = $_SESSION['user']['id'];
             $idCreneau = (int) ($_POST['id_creneau'] ?? 0);
             $idMedecin = (int) ($_POST['id_medecin'] ?? 0);

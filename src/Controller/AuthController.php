@@ -35,6 +35,12 @@ class AuthController
 
         // Traiter le formulaire de connexion (POST)
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                $_SESSION['error_msg'] = "Session expirée. Veuillez réessayer.";
+                header('Location: index.php?action=login');
+                exit();
+            }
+
             $email = trim($_POST['email'] ?? '');
             $password = $_POST['password'] ?? '';
 
@@ -43,6 +49,9 @@ class AuthController
 
             // Vérifier le mot de passe
             if ($user && password_verify($password, $user['password'])) {
+                // Regenerate session ID to prevent session fixation
+                session_regenerate_id(true);
+
                 // Stocker les infos en session
                 $_SESSION['user'] = [
                     'id'     => $user['id'],
@@ -81,6 +90,12 @@ class AuthController
     public function registerAction(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                $_SESSION['error_msg'] = "Session expirée. Veuillez réessayer.";
+                header('Location: index.php?action=register');
+                exit();
+            }
+
             $nom = trim($_POST['nom'] ?? '');
             $prenom = trim($_POST['prenom'] ?? '');
             $email = trim($_POST['email'] ?? '');
