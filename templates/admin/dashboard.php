@@ -44,12 +44,12 @@ include __DIR__ . '/../layout/header.php';
         <!-- Messages -->
         <?php if (isset($_SESSION['success_msg'])): ?>
             <div class="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl border border-emerald-100">
-                <?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                <?= htmlspecialchars($_SESSION['success_msg']); unset($_SESSION['success_msg']); ?>
             </div>
         <?php endif; ?>
         <?php if (isset($_SESSION['error_msg'])): ?>
             <div class="bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-xl border border-rose-100">
-                <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+                <?= htmlspecialchars($_SESSION['error_msg']); unset($_SESSION['error_msg']); ?>
             </div>
         <?php endif; ?>
 
@@ -105,6 +105,7 @@ include __DIR__ . '/../layout/header.php';
 
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <form method="POST" action="index.php?action=admin_creer_medecin" class="space-y-4">
+                    <?= csrfTokenField() ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
@@ -201,6 +202,7 @@ include __DIR__ . '/../layout/header.php';
                             <!-- Formulaire de modification (masqué par défaut) -->
                             <div id="edit-form-<?= $med['id_medecin'] ?>" class="hidden mt-4 pt-4 border-t border-slate-100">
                                 <form method="POST" action="index.php?action=admin_modifier_medecin" class="space-y-3">
+                                    <?= csrfTokenField() ?>
                                     <input type="hidden" name="id_medecin" value="<?= $med['id_medecin'] ?>">
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>

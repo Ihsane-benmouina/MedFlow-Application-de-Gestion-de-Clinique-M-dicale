@@ -53,6 +53,11 @@ class DoctorController
         AuthMiddleware::requireRole('medecin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                header('Location: index.php?action=doctor_dashboard');
+                exit();
+            }
+
             $idRdv = (int) ($_POST['id_rdv'] ?? 0);
             $statut = $_POST['statut_action'] ?? '';
 
@@ -82,6 +87,11 @@ class DoctorController
         AuthMiddleware::requireRole('medecin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                header('Location: index.php?action=doctor_dashboard');
+                exit();
+            }
+
             $idRdv = (int) ($_POST['id_rdv'] ?? 0);
             $ordonnanceContenu = trim($_POST['ordonnance'] ?? '');
 
@@ -108,6 +118,11 @@ class DoctorController
         AuthMiddleware::requireRole('medecin');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!validateCsrfToken()) {
+                header('Location: index.php?action=doctor_dashboard');
+                exit();
+            }
+
             $idMedecin = $_SESSION['user']['id_medecin'] ?? 0;
             $heureDebut = $_POST['heure_debut'] ?? '';
             $heureFin = $_POST['heure_fin'] ?? '';

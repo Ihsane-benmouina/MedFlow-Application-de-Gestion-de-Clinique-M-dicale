@@ -57,7 +57,7 @@ include __DIR__ . '/../layout/header.php';
         <!-- Messages -->
         <?php if (isset($_SESSION['success_msg'])): ?>
             <div class="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl border border-emerald-100">
-                <?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+                <?= htmlspecialchars($_SESSION['success_msg']); unset($_SESSION['success_msg']); ?>
             </div>
         <?php endif; ?>
 
@@ -115,6 +115,7 @@ include __DIR__ . '/../layout/header.php';
                                 <?php if ($rdv['statut'] === 'En attente'): ?>
                                     <div class="flex gap-2">
                                         <form method="POST" action="index.php?action=doctor_update_statut">
+                                            <?= csrfTokenField() ?>
                                             <input type="hidden" name="id_rdv" value="<?= $rdv['id_rdv'] ?>">
                                             <input type="hidden" name="statut_action" value="Confirmé">
                                             <button type="submit" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 cursor-pointer">
@@ -122,6 +123,7 @@ include __DIR__ . '/../layout/header.php';
                                             </button>
                                         </form>
                                         <form method="POST" action="index.php?action=doctor_update_statut">
+                                            <?= csrfTokenField() ?>
                                             <input type="hidden" name="id_rdv" value="<?= $rdv['id_rdv'] ?>">
                                             <input type="hidden" name="statut_action" value="Annulé">
                                             <button type="submit" class="px-4 py-2 bg-rose-500 text-white text-xs font-bold rounded-xl hover:bg-rose-600 cursor-pointer">
@@ -164,6 +166,7 @@ include __DIR__ . '/../layout/header.php';
                         <p class="text-xs text-slate-400"><?= date('d/m/Y à H:i', strtotime($rdv['heure_debut'])) ?></p>
 
                         <form method="POST" action="index.php?action=terminer_consultation" class="mt-3 space-y-3">
+                            <?= csrfTokenField() ?>
                             <input type="hidden" name="id_rdv" value="<?= $rdv['id_rdv'] ?>">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Ordonnance / Prescription</label>
@@ -191,6 +194,7 @@ include __DIR__ . '/../layout/header.php';
             <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
                 <h4 class="text-sm font-bold text-slate-900 mb-3">Ajouter un créneau</h4>
                 <form method="POST" action="index.php?action=ajouter_creneau" class="flex flex-wrap gap-3 items-end">
+                    <?= csrfTokenField() ?>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Début</label>
                         <input type="datetime-local" name="heure_debut"

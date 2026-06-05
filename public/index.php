@@ -4,17 +4,18 @@
  * Toutes les requêtes passent par ce fichier (routing)
  */
 
-// Démarrer le buffer de sortie et la session
+// Démarrer le buffer de sortie
 ob_start();
+
+// 1. Charger les fonctions de sécurité (headers + session hardening before session_start)
+require_once __DIR__ . '/../config/security.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 1. Charger la connexion à la base de données
+// 2. Charger la connexion à la base de données
 $pdo = require_once __DIR__ . '/../config/database.php';
-
-// 2. Charger les fonctions de sécurité
-require_once __DIR__ . '/../config/security.php';
 
 // 3. Charger le Middleware
 require_once __DIR__ . '/../src/Middleware/AuthMiddleware.php';
