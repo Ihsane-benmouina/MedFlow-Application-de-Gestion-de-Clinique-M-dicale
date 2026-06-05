@@ -1,251 +1,272 @@
-<?php include __DIR__ . '/../layout/header.php'; ?>
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (!isset($medecins)) $medecins = [];
+if (!isset($specialites)) $specialites = [];
+if (!isset($listeSpecialites)) $listeSpecialites = [];
+if (!isset($totalMedecins)) $totalMedecins = 0;
+if (!isset($totalPatients)) $totalPatients = 0;
+if (!isset($totalRdv)) $totalRdv = 0;
+if (!isset($rdvEnAttente)) $rdvEnAttente = 0;
+include __DIR__ . '/../layout/header.php';
+?>
 
-    <div class="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)]" id="admin-layout">
+<div class="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-12rem)]">
 
-        <aside class="w-full lg:w-64 shrink-0">
-            <div class="bg-slate-900 text-slate-400 rounded-2xl p-4 sticky top-24 shadow-xl border border-slate-800 space-y-6">
-                <div class="px-3 py-2 border-b border-slate-800/60">
-                    <p class="text-[10px] font-bold uppercase tracking-widest text-sky-400">Rôle Actuel</p>
-                    <h4 class="text-white font-extrabold text-sm tracking-tight flex items-center gap-2 mt-0.5">
-                        🛡️ Central Admin
-                    </h4>
-                </div>
-
-                <nav class="space-y-1">
-                    <button onclick="switchAdminTab('tab-stats')" id="btn-tab-stats" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold transition-all text-white bg-gradient-to-r from-sky-500/10 to-sky-500/20 border border-sky-500/20 shadow-xs cursor-pointer admin-nav-btn">
-                        📊 Vue d'ensemble & Stats
-                    </button>
-
-                    <button onclick="switchAdminTab('tab-add-doctor')" id="btn-tab-add-doctor" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold transition-all hover:bg-slate-800/50 hover:text-white cursor-pointer admin-nav-btn">
-                        ➕ Ajouter un Praticien
-                    </button>
-
-                    <button onclick="switchAdminTab('tab-list-doctors')" id="btn-tab-list-doctors" class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold transition-all hover:bg-slate-800/50 hover:text-white cursor-pointer admin-nav-btn">
-                        👥 Registre & Comptes (Modifier/Désactiver)
-                    </button>
-                </nav>
+    <!-- SIDEBAR ADMIN -->
+    <aside class="w-full lg:w-64 shrink-0">
+        <div class="bg-slate-900 text-slate-400 rounded-2xl p-4 sticky top-24 shadow-xl border border-slate-800 space-y-6">
+            <div class="px-3 py-2 border-b border-slate-800/60">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-purple-400">Administration</p>
+                <h4 class="text-white font-extrabold text-sm tracking-tight mt-0.5">
+                    <?= htmlspecialchars($_SESSION['user']['prenom'] . ' ' . $_SESSION['user']['nom']) ?>
+                </h4>
             </div>
-        </aside>
+            <nav class="space-y-1">
+                <button onclick="switchAdminTab('adm-stats')" id="btn-adm-stats"
+                        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-500/10 to-purple-500/20 border border-purple-500/20 cursor-pointer adm-nav">
+                    Vue d'ensemble
+                </button>
+                <button onclick="switchAdminTab('adm-add')" id="btn-adm-add"
+                        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold hover:bg-slate-800/50 hover:text-white cursor-pointer adm-nav">
+                    Ajouter un Médecin
+                </button>
+                <button onclick="switchAdminTab('adm-list')" id="btn-adm-list"
+                        class="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold hover:bg-slate-800/50 hover:text-white cursor-pointer adm-nav">
+                    Liste des Médecins
+                </button>
+            </nav>
+        </div>
+    </aside>
 
-        <div class="flex-1 space-y-6">
+    <!-- CONTENU -->
+    <div class="flex-1 space-y-6">
 
-            <div id="tab-stats" class="space-y-6 admin-tab-content">
-                <div class="border-b border-slate-200/60 pb-3">
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Vue d'ensemble de la Clinique</h2>
-                    <p class="text-xs text-slate-400">Suivi des performances et de l'état général du système.</p>
+        <!-- Messages -->
+        <?php if (isset($_SESSION['success_msg'])): ?>
+            <div class="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl border border-emerald-100">
+                <?= $_SESSION['success_msg']; unset($_SESSION['success_msg']); ?>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['error_msg'])): ?>
+            <div class="bg-rose-50 text-rose-700 text-xs font-semibold p-3 rounded-xl border border-rose-100">
+                <?= $_SESSION['error_msg']; unset($_SESSION['error_msg']); ?>
+            </div>
+        <?php endif; ?>
+
+        <!-- ===== TAB 1 : STATISTIQUES ===== -->
+        <div id="adm-stats" class="space-y-6 adm-tab">
+            <div class="border-b border-slate-200/60 pb-3">
+                <h2 class="text-xl font-extrabold text-slate-900">Vue d'ensemble de la Clinique</h2>
+                <p class="text-xs text-slate-400">Statistiques et indicateurs principaux.</p>
+            </div>
+
+            <!-- Cartes de statistiques -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Médecins Actifs</p>
+                    <h3 class="text-2xl font-extrabold text-purple-600 mt-1"><?= $totalMedecins ?></h3>
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre total de RDV Clinique</p>
-                            <h3 class="text-3xl font-extrabold text-slate-900 mt-1">3,482</h3>
-                        </div>
-                        <div class="w-12 h-12 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center text-xl shadow-inner">📊</div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between">
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Taux d'annulation global</p>
-                            <h3 class="text-3xl font-extrabold text-rose-600 mt-1">3.4%</h3>
-                        </div>
-                        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-xl shadow-inner">⚠️</div>
-                    </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Patients</p>
+                    <h3 class="text-2xl font-extrabold text-sky-600 mt-1"><?= $totalPatients ?></h3>
                 </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Total RDV</p>
+                    <h3 class="text-2xl font-extrabold text-slate-900 mt-1"><?= $totalRdv ?></h3>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                    <p class="text-xs font-bold text-slate-400 uppercase">RDV En Attente</p>
+                    <h3 class="text-2xl font-extrabold text-amber-500 mt-1"><?= $rdvEnAttente ?></h3>
+                </div>
+            </div>
 
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+            <!-- Spécialités -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs space-y-4">
+                <h3 class="font-bold text-slate-900 text-sm">Médecins par Spécialité</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <?php foreach ($specialites as $spec): ?>
+                        <div class="p-4 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-slate-700"><?= htmlspecialchars($spec['nom']) ?></h4>
+                            <span class="text-xs font-bold bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                                <?= $spec['total_medecins'] ?> médecin(s)
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== TAB 2 : AJOUTER MÉDECIN ===== -->
+        <div id="adm-add" class="hidden space-y-6 adm-tab">
+            <div class="border-b border-slate-200/60 pb-3">
+                <h2 class="text-xl font-extrabold text-slate-900">Ajouter un Médecin</h2>
+                <p class="text-xs text-slate-400">Créez un nouveau compte médecin pour la clinique.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+                <form method="POST" action="index.php?action=admin_creer_medecin" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
+                            <input type="text" name="nom" placeholder="Nom du médecin"
+                                   class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prénom</label>
+                            <input type="text" name="prenom" placeholder="Prénom du médecin"
+                                   class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-500" required>
+                        </div>
+                    </div>
+
                     <div>
-                        <h3 class="font-bold text-slate-900 text-sm">Effectifs par Spécialités Médicales</h3>
-                        <p class="text-xs text-slate-400">Total des médecins actuellement assignés à chaque catégorie.</p>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                        <input type="email" name="email" placeholder="medecin@medflow.com"
+                               class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-500" required>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="p-4 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center">
-                            <div class="flex items-center gap-3"><span>❤️</span> <h4 class="text-sm font-bold text-slate-700">Cardiologie</h4></div>
-                            <span class="text-xs font-bold bg-white px-2.5 py-1 rounded-md border border-slate-200">4 actifs</span>
-                        </div>
-                        <div class="p-4 border border-slate-100 bg-slate-50/50 rounded-xl flex justify-between items-center">
-                            <div class="flex items-center gap-3"><span>🩺</span> <h4 class="text-sm font-bold text-slate-700">Médecine Générale</h4></div>
-                            <span class="text-xs font-bold bg-white px-2.5 py-1 rounded-md border border-slate-200">8 actifs</span>
-                        </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Mot de passe</label>
+                        <input type="password" name="password" placeholder="Mot de passe"
+                               class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-500" required>
                     </div>
-                </div>
-            </div>
 
-            <div id="tab-add-doctor" class="hidden space-y-6 admin-tab-content">
-                <div class="border-b border-slate-200/60 pb-3">
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Ajouter un Nouveau Praticien</h2>
-                    <p class="text-xs text-slate-400">Créez un compte sécurisé pour un médecin afin de lui ouvrir l'accès à son planning hebdomadaire.</p>
-                </div>
-
-                <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-100 shadow-xs max-w-xl">
-                    <form class="space-y-4" onsubmit="event.preventDefault(); alert('Médecin inséré avec succès ! Retrouvez-le dans l\'onglet Registre.'); switchAdminTab('tab-list-doctors');">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom complet du praticien</label>
-                            <input type="text" placeholder="Dr. Ahmed Alami" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium bg-slate-50/40" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Adresse Email professionnelle (Sert d'identifiant)</label>
-                            <input type="email" placeholder="ahmed.alami@medflow.ma" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium bg-slate-50/40" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Spécialité Obligatoire (Filtre Patient)</label>
-                            <select class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-700 focus:outline-none focus:border-sky-500 font-medium" required>
-                                <option value="">Sélectionner une spécialité officielle...</option>
-                                <option value="cardio">Cardiologue</option>
-                                <option value="general">Généraliste</option>
-                            </select>
-                        </div>
-                        <div class="pt-2">
-                            <button type="submit" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-3.5 rounded-xl cursor-pointer transition-all shadow-xs">
-                                🚀 Créer et Valider le Compte
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <div id="tab-list-doctors" class="hidden space-y-6 admin-tab-content">
-                <div class="border-b border-slate-200/60 pb-3">
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Registre des Comptes Médecins</h2>
-                    <p class="text-xs text-slate-400">Visualisez la liste complète des praticiens enregistrés. Vous disposez des droits pour modifier ou suspendre leurs accès.</p>
-                </div>
-
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                            <tr class="bg-slate-50 text-[11px] font-bold uppercase text-slate-400 tracking-wider border-b border-slate-100">
-                                <th class="p-4">Médecin & Contact</th>
-                                <th class="p-4">Spécialité Spécifiée</th>
-                                <th class="p-4">Statut Système</th>
-                                <th class="p-4 text-right">Actions de Contrôle</th>
-                            </tr>
-                            </thead>
-                            <tbody class="text-sm divide-y divide-slate-100">
-
-                            <tr class="hover:bg-slate-50/30 transition-colors">
-                                <td class="p-4">
-                                    <div class="font-bold text-slate-900">Dr. Ahmed Alami</div>
-                                    <div class="text-xs text-slate-400">ahmed.alami@medflow.ma</div>
-                                </td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-100">Cardiologue</span>
-                                </td>
-                                <td class="p-4">
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Actif
-                                    </span>
-                                </td>
-                                <td class="p-4 text-right space-x-1">
-                                    <button onclick="openEditModal('Dr. Ahmed Alami', 'ahmed.alami@medflow.ma', 'cardio')" class="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                        ✏️ Modifier
-                                    </button>
-                                    <button onclick="confirmDisable('Dr. Ahmed Alami')" class="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                        🚫 Désactiver
-                                    </button>
-                                </td>
-                            </tr>
-
-                            <tr class="hover:bg-slate-50/30 transition-colors">
-                                <td class="p-4">
-                                    <div class="font-bold text-slate-900">Dr. Rachid Benjelloun</div>
-                                    <div class="text-xs text-slate-400">rachid.benj@medflow.ma</div>
-                                </td>
-                                <td class="p-4">
-                                    <span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">Généraliste</span>
-                                </td>
-                                <td class="p-4">
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
-                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Actif
-                                    </span>
-                                </td>
-                                <td class="p-4 text-right space-x-1">
-                                    <button onclick="openEditModal('Dr. Rachid Benjelloun', 'rachid.benj@medflow.ma', 'general')" class="px-3 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                        ✏️ Modifier
-                                    </button>
-                                    <button onclick="confirmDisable('Dr. Rachid Benjelloun')" class="px-3 py-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
-                                        🚫 Désactiver
-                                    </button>
-                                </td>
-                            </tr>
-
-                            </tbody>
-                        </table>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Spécialité</label>
+                        <select name="id_specialite"
+                                class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-purple-500" required>
+                            <option value="">-- Choisir une spécialité --</option>
+                            <?php foreach ($listeSpecialites as $spec): ?>
+                                <option value="<?= $spec['id'] ?>"><?= htmlspecialchars($spec['nom']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-                </div>
-            </div>
 
+                    <button type="submit"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-3.5 rounded-xl cursor-pointer transition-all">
+                        Créer le médecin
+                    </button>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <div id="edit-doctor-modal" class="hidden fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <div>
-                <h3 class="text-lg font-bold text-slate-900">Modifier le Profil Praticien</h3>
-                <p class="text-xs text-slate-400">Mise à jour des informations de compte médecin.</p>
+        <!-- ===== TAB 3 : LISTE DES MÉDECINS ===== -->
+        <div id="adm-list" class="hidden space-y-6 adm-tab">
+            <div class="border-b border-slate-200/60 pb-3">
+                <h2 class="text-xl font-extrabold text-slate-900">Liste des Médecins</h2>
+                <p class="text-xs text-slate-400">Gérez, modifiez ou désactivez les comptes médecins.</p>
             </div>
-            <form class="space-y-3.5" onsubmit="event.preventDefault(); closeEditModal(); alert('Informations mises à jour avec succès dans la base de données !');">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nom complet</label>
-                    <input type="text" id="modal-name" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium">
+
+            <?php if (empty($medecins)): ?>
+                <div class="bg-white p-8 rounded-2xl border border-slate-100 text-center">
+                    <p class="text-sm text-slate-400">Aucun médecin enregistré.</p>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Adresse Email</label>
-                    <input type="email" id="modal-email" class="w-full p-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 font-medium">
+            <?php else: ?>
+                <div class="space-y-3">
+                    <?php foreach ($medecins as $med): ?>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-slate-900">
+                                        Dr. <?= htmlspecialchars($med['prenom'] . ' ' . $med['nom']) ?>
+                                    </h4>
+                                    <p class="text-xs text-purple-600 font-semibold"><?= htmlspecialchars($med['specialite_nom']) ?></p>
+                                    <p class="text-xs text-slate-400"><?= htmlspecialchars($med['email']) ?></p>
+                                    <span class="text-xs font-bold <?= $med['actif'] ? 'text-emerald-600' : 'text-rose-600' ?>">
+                                        <?= $med['actif'] ? 'Actif' : 'Inactif' ?>
+                                    </span>
+                                </div>
+
+                                <div class="flex gap-2 flex-wrap">
+                                    <!-- Bouton Modifier -->
+                                    <button onclick="toggleEditForm(<?= $med['id_medecin'] ?>)"
+                                            class="px-4 py-2 bg-sky-50 text-sky-700 text-xs font-bold rounded-xl border border-sky-100 hover:bg-sky-100 cursor-pointer">
+                                        Modifier
+                                    </button>
+
+                                    <!-- Bouton Activer/Désactiver -->
+                                    <?php if ($med['actif']): ?>
+                                        <a href="index.php?action=admin_toggle_medecin&id=<?= $med['id_medecin'] ?>&toggle=desactiver"
+                                           class="px-4 py-2 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-100 hover:bg-rose-100 no-underline">
+                                            Désactiver
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="index.php?action=admin_toggle_medecin&id=<?= $med['id_medecin'] ?>&toggle=activer"
+                                           class="px-4 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-100 hover:bg-emerald-100 no-underline">
+                                            Activer
+                                        </a>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- Formulaire de modification (masqué par défaut) -->
+                            <div id="edit-form-<?= $med['id_medecin'] ?>" class="hidden mt-4 pt-4 border-t border-slate-100">
+                                <form method="POST" action="index.php?action=admin_modifier_medecin" class="space-y-3">
+                                    <input type="hidden" name="id_medecin" value="<?= $med['id_medecin'] ?>">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nom</label>
+                                            <input type="text" name="nom" value="<?= htmlspecialchars($med['nom']) ?>"
+                                                   class="w-full p-2.5 border border-slate-200 rounded-xl text-sm" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">Prénom</label>
+                                            <input type="text" name="prenom" value="<?= htmlspecialchars($med['prenom']) ?>"
+                                                   class="w-full p-2.5 border border-slate-200 rounded-xl text-sm" required>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+                                        <input type="email" name="email" value="<?= htmlspecialchars($med['email']) ?>"
+                                               class="w-full p-2.5 border border-slate-200 rounded-xl text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Spécialité</label>
+                                        <select name="id_specialite" class="w-full p-2.5 border border-slate-200 rounded-xl text-sm" required>
+                                            <?php foreach ($listeSpecialites as $spec): ?>
+                                                <option value="<?= $spec['id'] ?>" <?= $spec['id'] == $med['id_specialite'] ? 'selected' : '' ?>>
+                                                    <?= htmlspecialchars($spec['nom']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <button type="submit"
+                                            class="px-6 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 cursor-pointer">
+                                        Enregistrer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Spécialité médicale</label>
-                    <select id="modal-spec" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-sky-500 font-medium text-slate-700">
-                        <option value="cardio">Cardiologue</option>
-                        <option value="general">Généraliste</option>
-                    </select>
-                </div>
-                <div class="pt-2 flex justify-end gap-2 text-xs font-bold">
-                    <button type="button" onclick="closeEditModal()" class="px-4 py-2.5 text-slate-500 hover:bg-slate-100 rounded-xl transition-all cursor-pointer">Annuler</button>
-                    <button type="submit" class="px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl transition-all shadow-md shadow-sky-500/10 cursor-pointer">Sauvegarder</button>
-                </div>
-            </form>
+            <?php endif; ?>
         </div>
+
     </div>
+</div>
 
-    <script>
-        function switchAdminTab(tabId) {
-            // 1. Cacher tous les contenus d'onglets
-            document.querySelectorAll('.admin-tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
+<script>
+// Changer d'onglet admin
+function switchAdminTab(tabId) {
+    document.querySelectorAll('.adm-tab').forEach(function(tab) {
+        tab.classList.add('hidden');
+    });
+    document.getElementById(tabId).classList.remove('hidden');
 
-            // 2. Afficher l'onglet actif
-            document.getElementById(tabId).classList.remove('hidden');
+    document.querySelectorAll('.adm-nav').forEach(function(btn) {
+        btn.className = 'w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold hover:bg-slate-800/50 hover:text-white cursor-pointer adm-nav';
+    });
+    document.getElementById('btn-' + tabId).className = 'w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-purple-500/10 to-purple-500/20 border border-purple-500/20 cursor-pointer adm-nav';
+}
 
-            // 3. Réinitialiser les styles de tous les boutons de la Sidebar
-            document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
-                btn.classList.add('text-slate-400', 'font-semibold');
-            });
-
-            // 4. Activer le style sur le bouton cliqué
-            const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-slate-400', 'font-semibold');
-            activeBtn.classList.add('text-white', 'bg-gradient-to-r', 'from-sky-500/10', 'to-sky-500/20', 'border-sky-500/20', 'shadow-xs', 'font-bold');
-        }
-
-        // Fonctions utilitaires pour la démo UI (Modal & Alertes)
-        function openEditModal(name, email, spec) {
-            document.getElementById('modal-name').value = name;
-            document.getElementById('modal-email').value = email;
-            document.getElementById('modal-spec').value = spec;
-            document.getElementById('edit-doctor-modal').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-doctor-modal').classList.add('hidden');
-        }
-
-        function confirmDisable(doctorName) {
-            if(confirm(`Êtes-vous sûr de vouloir désactiver immédiatement le compte de ${doctorName} ? L'accès au système lui sera refusé.`)) {
-                alert('Compte suspendu avec succès.');
-            }
-        }
-    </script>
+// Afficher/masquer le formulaire de modification
+function toggleEditForm(id) {
+    var form = document.getElementById('edit-form-' + id);
+    if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+    } else {
+        form.classList.add('hidden');
+    }
+}
+</script>
 
 <?php include __DIR__ . '/../layout/footer.php'; ?>
