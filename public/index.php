@@ -1,5 +1,4 @@
 <?php
-// Démarrer la session en premier lieu
 ob_start();
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -7,10 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 
-// 1. Récupérer l'objet PDO de la base de données (Fichier dyalk li fih return $pdo)
+
 $pdo = require_once __DIR__ . '/../config/database.php';
 
-// 2. Inclure les Controllers (Manuellement ou via Autoload)
 require_once __DIR__ . '/../src/Controller/DoctorController.php';
 require_once __DIR__ . '/../src/Controller/PatientController.php';
 require_once __DIR__ . '/../src/Controller/AuthController.php';
@@ -46,7 +44,6 @@ switch ($action) {
         $patientController->dashboard();
         break;
 
-    // ----- MÉDECIN (DOCTOR) -----
     case 'doctor_dashboard':
         $doctorController->dashboard();
         break;
@@ -59,9 +56,7 @@ switch ($action) {
         $doctorController->finaliserConsultationAction();
         break;
 
-    // ----- AUTHENTIFICATION (L-FIX HNA) -----
     case 'login':
-        // Hada hwa li ghadi i-akhod l-POST wlla i-affichi l-view 3la 7sab chno jây
         $authController->loginAction();
         break;
 
@@ -73,7 +68,6 @@ switch ($action) {
         include __DIR__ . '/../templates/admin/dashboard.php';
         break;
 
-    // ----- DEFAULT DE SÉCURITÉ -----
     default:
         $patientController->index();
         break;
